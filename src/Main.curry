@@ -59,6 +59,9 @@ import Verify.Options
 import Verify.ProgInfo
 import Verify.Statistics
 import Verify.WithSMT
+import Verification.Run           ( runUntypedVerification )
+import Verification.Options       ( VOptions (..), defaultVOptions )
+import Verification.Types         ( UVerification, Verification (..), emptyVerification )
 
 ------------------------------------------------------------------------------
 banner :: String
@@ -82,9 +85,19 @@ main = do
             printInfoLine "Try option '--help' for usage information."
             exitWith 1
     ms -> do
+      let vopts = defaultVOptions
+                    { voModules = ms
+                    -- TODO: Logging etc.
+                    }
       printWhenStatus opts banner
       if optLegacy opts
         then runLegacy opts ms
-        else putStrLn "TODO: The framework implementation"
+        else do
+          runUntypedVerification (nonFailVerifier opts) vopts
+          putStrLn "TODO: The framework implementation"
+
+--- The non-failure verifier as a framework verification.
+nonFailVerifier :: Options -> UVerification ()
+nonFailVerifier _ = emptyVerification -- TODO
 
 ------------------------------------------------------------------------------
