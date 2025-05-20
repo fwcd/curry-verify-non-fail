@@ -56,13 +56,14 @@ data Options = Options
   , optStats       :: Bool -- show and store statitics?
   , optTime        :: Bool -- show elapsed verification time?
   , optDomainID    :: String -- the unique id for the abstract term domain
+  , optLegacy      :: Bool -- use the legacy, non-framework implementation
   }
 
 --- The default options of the verification tool.
 defaultOptions :: Options
 defaultOptions =
   Options 1 False "" True False False FormatText False True True False False
-          True True False False False False False False ""
+          True True False False False False False False "" False
 
 --- Process the actual command line argument and return the options
 --- and the name of the main program.
@@ -94,6 +95,9 @@ options =
   , Option "v" ["verbosity"]
             (OptArg (maybe (checkVerb 2) (safeReadNat checkVerb)) "<n>")
             "verbosity level:\n0: quiet (same as `-q')\n1: show verification result (default)\n2: show status messages (same as `-v')\n3: show also verification details\n4: show all details"
+  , Option "l" ["legacy"]
+            (NoArg (\opts -> opts { optLegacy = True }))
+            "use the legacy (non-framework) implementation"
   , Option "a" ["all"]
             (NoArg (\opts -> opts { optPublic = False }))
            "show types of all (also private) operations"

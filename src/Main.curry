@@ -83,6 +83,8 @@ main = do
             exitWith 1
     ms -> do
       printWhenStatus opts banner
-      runLegacy opts ms
+      if optLegacy opts
+        then runLegacy opts ms
+        else putStrLn "TODO: The framework implementation"
 
 ------------------------------------------------------------------------------
