@@ -44,6 +44,9 @@ import System.Directory           ( createDirectoryIfMissing, doesFileExist
 import System.FilePath            ( (</>) )
 import System.Path                ( fileInPath )
 import System.Process             ( exitWith )
+import Verification.Run           ( runUntypedVerification )
+import Verification.Options       ( VOptions (..), defaultVOptions )
+import Verification.Types         ( UVerification, Verification (..), emptyVerification )
 import XML
 
 -- Imports from package modules:
@@ -59,9 +62,6 @@ import Verify.Options
 import Verify.ProgInfo
 import Verify.Statistics
 import Verify.WithSMT
-import Verification.Run           ( runUntypedVerification )
-import Verification.Options       ( VOptions (..), defaultVOptions )
-import Verification.Types         ( UVerification, Verification (..), emptyVerification )
 
 ------------------------------------------------------------------------------
 banner :: String
