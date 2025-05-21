@@ -17,7 +17,7 @@ import Data.IORef
 import Data.List
 import Data.Maybe                  ( isNothing )
 import System.Environment          ( getArgs )
-import Text.Pretty                 ( pPrint, Doc, text )
+import Text.Pretty                 ( pPrint )
 
 import Debug.Trace ( trace )
 
@@ -60,6 +60,7 @@ import Verify.Files
 import Verify.Helpers
 import Verify.IOTypes
 import Verify.NonFailConditions
+import Verify.NonFailInfo
 import Verify.Options
 import Verify.ProgInfo
 import Verify.Statistics
@@ -100,14 +101,6 @@ main = do
             Left e  -> putStrLn ("Verification failed: " ++ e) >> exitWith 1
             Right s -> do
               putStrLn . pPrint $ ppVState ppNonFailInfo s
-
---- The inferred call types/non-failure conditions.
-data NonFailInfo = NonFailInfo -- TODO: Define this (e.g. call types etc.)
-  deriving (Show, Eq)
-
---- Pretty-prints the given non-failure info.
-ppNonFailInfo :: NonFailInfo -> Doc
-ppNonFailInfo = text . show -- TODO: Better implementation
 
 --- The non-failure verifier as a framework verification.
 nonFailVerifier :: Options -> UVerification NonFailInfo
