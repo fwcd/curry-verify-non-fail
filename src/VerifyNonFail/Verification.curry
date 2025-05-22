@@ -56,11 +56,11 @@ import FlatCurry.Build
 import FlatCurry.Simplify         ( simpExpr )
 import Legacy.Run                 ( runLegacy )
 import VerifyNonFail.CallTypes
+import VerifyNonFail.Conditions
 import VerifyNonFail.Files
+import VerifyNonFail.Info
 import VerifyNonFail.Helpers
 import VerifyNonFail.IOTypes
-import VerifyNonFail.NonFailConditions
-import VerifyNonFail.NonFailInfo
 import VerifyNonFail.Options
 import VerifyNonFail.ProgInfo
 import VerifyNonFail.Statistics

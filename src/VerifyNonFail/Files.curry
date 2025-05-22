@@ -50,7 +50,7 @@ import PackageConfig        ( getPackagePath )
 import VerifyNonFail.CallTypes
 import VerifyNonFail.Helpers
 import VerifyNonFail.IOTypes
-import VerifyNonFail.NonFailConditions
+import VerifyNonFail.Conditions
 import VerifyNonFail.Options
 import VerifyNonFail.ProgInfo
 

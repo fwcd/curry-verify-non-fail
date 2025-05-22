@@ -5,7 +5,7 @@
 --- @version March 2024
 ---------------------------------------------------------------------------
 
-module VerifyNonFail.NonFailConditions
+module VerifyNonFail.Conditions
  where
 
 import Data.List         ( (\\), find, isPrefixOf, isSuffixOf, nub

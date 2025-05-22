@@ -31,7 +31,7 @@ import XML
 -- Imports from package modules:
 import Legacy.Run                 ( runLegacy )
 import VerifyNonFail.Files        ( deleteVerifyCacheDirectory )
-import VerifyNonFail.NonFailInfo  ( ppNonFailInfo )
+import VerifyNonFail.Info         ( ppNonFailInfo )
 import VerifyNonFail.Options
 import VerifyNonFail.ProgInfo
 import VerifyNonFail.Statistics

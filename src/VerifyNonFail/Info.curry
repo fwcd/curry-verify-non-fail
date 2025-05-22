@@ -1,4 +1,4 @@
-module VerifyNonFail.NonFailInfo
+module VerifyNonFail.Info
   ( NonFailInfo (..), ppNonFailInfo
   ) where
 
