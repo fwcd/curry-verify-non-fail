@@ -21,8 +21,8 @@ import FlatCurry.Read     ( readFlatCurryWithImports )
 import FlatCurry.Simplify ( simpExpr )
 import FlatCurry.Types
 
-import Verify.Options     ( printInfoLine ) 
-import Verify.ProgInfo
+import VerifyNonFail.Options     ( printInfoLine ) 
+import VerifyNonFail.ProgInfo
 
 testAddTypes :: String -> IO ()
 testAddTypes mname = do

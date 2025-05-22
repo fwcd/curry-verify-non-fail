@@ -36,7 +36,7 @@
     "configModule": "PackageConfig",
     "executable": {
         "name"   : "curry-calltypes",
-        "main"   : "Main",
+        "main"   : "VerifyNonFail.Main",
         "options": { "kics2" : ":set rts -T",
                      "kmcc"  : ":set rts -T"  }
     },

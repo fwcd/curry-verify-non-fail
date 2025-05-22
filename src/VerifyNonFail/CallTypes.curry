@@ -5,7 +5,7 @@
 --- @version January 2024
 ------------------------------------------------------------------------------
 
-module Verify.CallTypes where
+module VerifyNonFail.CallTypes where
 
 import Data.List
 
@@ -14,9 +14,9 @@ import FlatCurry.Goodies
 import FlatCurry.Types
 
 import FlatCurry.Build     ( pre )
-import Verify.Helpers
-import Verify.Options
-import Verify.ProgInfo
+import VerifyNonFail.Helpers
+import VerifyNonFail.Options
+import VerifyNonFail.ProgInfo
 
 ------------------------------------------------------------------------------
 --- A call type is intended to specify the conditions on arguments

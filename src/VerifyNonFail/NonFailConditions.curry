@@ -5,7 +5,7 @@
 --- @version March 2024
 ---------------------------------------------------------------------------
 
-module Verify.NonFailConditions
+module VerifyNonFail.NonFailConditions
  where
 
 import Data.List         ( (\\), find, isPrefixOf, isSuffixOf, nub
@@ -19,7 +19,7 @@ import FlatCurry.Types
 import FlatCurry.Build
 import FlatCurry.Print
 import FlatCurry.Simplify
-import Verify.ProgInfo
+import VerifyNonFail.ProgInfo
 
 --- Non-fail conditions are represented as a pair of typed variables
 --- occurring in the conditions and a Boolean expression

@@ -6,7 +6,7 @@
 --- @version February 2025
 ------------------------------------------------------------------------------
 
-module Verify.IOTypes
+module VerifyNonFail.IOTypes
   ( InOutType(..), valueInOutType, trivialInOutType, isAnyIOType, showIOT
   , valuesOfIOT, inOutATypeFunc
   , VarTypes, VarTypesMap, ioVarType, showVarTypes, showArgumentVars
@@ -23,7 +23,7 @@ import FlatCurry.Types
 
 import Debug.Trace ( trace )
 
-import Verify.Helpers
+import VerifyNonFail.Helpers
 
 ------------------------------------------------------------------------------
 -- The implementation of an analysis to get the input/output types of operations.

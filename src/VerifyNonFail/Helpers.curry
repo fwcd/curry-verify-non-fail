@@ -2,7 +2,7 @@
 -- Some auxiliary definitions used in different modules.
 ------------------------------------------------------------------------------
 
-module Verify.Helpers where
+module VerifyNonFail.Helpers where
 
 import Data.Char          ( isDigit )
 import Data.IORef
@@ -23,7 +23,7 @@ import System.Directory   ( getModificationTime, doesFileExist )
 import System.FilePath    ( (</>) )
 
 import FlatCurry.Build
-import Verify.Options     ( Options, printWhenStatus )
+import VerifyNonFail.Options     ( Options, printWhenStatus )
 
 ------------------------------------------------------------------------------
 -- Store for the analysis information of CASS. Used to avoid multiple reads.
@@ -31,7 +31,7 @@ data AnalysisStore a = AnaStore [(String, ProgInfo a)]
 
 -- Loads CASS analysis results for a module and its imported entities.
 loadAnalysisWithImports :: (Eq a, Read a, Show a, ReadWrite a)
-   => IORef (AnalysisStore a) -> Analysis a -> Verify.Options.Options -> Prog
+   => IORef (AnalysisStore a) -> Analysis a -> VerifyNonFail.Options.Options -> Prog
    -> IO (QName -> a)
 loadAnalysisWithImports anastore analysis opts prog = do
   maininfo <- getOrAnalyze (progName prog)

@@ -5,7 +5,7 @@
 --- @version January 2025
 ---------------------------------------------------------------------------
 
-module Verify.WithSMT
+module VerifyNonFail.WithSMT
  where
 
 import Control.Monad     ( unless, when )
@@ -32,10 +32,10 @@ import System.FilePath    ( (</>) )
 import System.IOExts      ( evalCmd )
 import Text.Pretty        ( pPrint, pretty, text )
 
-import Verify.ESMT as SMT
-import Verify.Helpers
-import Verify.Options
-import Verify.ProgInfo
+import VerifyNonFail.ESMT as SMT
+import VerifyNonFail.Helpers
+import VerifyNonFail.Options
+import VerifyNonFail.ProgInfo
 import PackageConfig      ( getPackagePath )
 
 ------------------------------------------------------------------------------

@@ -138,7 +138,7 @@ Files
 In order to support a modular analysis of applications consisting
 of several modules, the tool caches already computed analysis results
 of modules in under the directory `~/.curry_verify_cache`.
-This path is defined in `Verify.Files.getVerifyCacheDirectory`.
+This path is defined in `VerifyNonFail.Files.getVerifyCacheDirectory`.
 To store the analysis results for different Curry systems and
 abstract domains separately, the analysis results for a Curry module
 which is stored in a file with path `MODULEPATH.curry` are contained in

@@ -10,7 +10,7 @@
 --- @version March 2024
 ------------------------------------------------------------------------------
 
-module Verify.ESMT where
+module VerifyNonFail.ESMT where
 
 import Data.List ( (\\), intercalate, isPrefixOf, union )
 

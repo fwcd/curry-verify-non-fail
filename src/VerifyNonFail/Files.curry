@@ -10,7 +10,7 @@
 --- @version January 2025
 -----------------------------------------------------------------------------
 
-module Verify.Files
+module VerifyNonFail.Files
    ( deleteVerifyCacheDirectory, typeFilesOutdated
    , readIOTypes, readCallCondTypes
    , readTypesOfModules, readPublicCallTypeModule
@@ -47,12 +47,12 @@ import System.Process       ( system )
 
 import FlatCurry.Build      ( pre )
 import PackageConfig        ( getPackagePath )
-import Verify.CallTypes
-import Verify.Helpers
-import Verify.IOTypes
-import Verify.NonFailConditions
-import Verify.Options
-import Verify.ProgInfo
+import VerifyNonFail.CallTypes
+import VerifyNonFail.Helpers
+import VerifyNonFail.IOTypes
+import VerifyNonFail.NonFailConditions
+import VerifyNonFail.Options
+import VerifyNonFail.ProgInfo
 
 ------------------------------------------------------------------------------
 -- Definition of directory and file names for various data.

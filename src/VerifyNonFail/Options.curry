@@ -6,7 +6,7 @@
 --- @version January 2025
 -------------------------------------------------------------------------
 
-module Verify.Options
+module VerifyNonFail.Options
   ( OutputFormat(..), Options(..), defaultOptions, processOptions
   , whenStatus, printWhenStatus, printWhenDetails
   , printWhenAll, printInfoString, printInfoLine

@@ -49,15 +49,15 @@ import XML
 -- Imports from package modules:
 import FlatCurry.Build
 import FlatCurry.Simplify         ( simpExpr )
-import Verify.CallTypes
-import Verify.Files
-import Verify.Helpers
-import Verify.IOTypes
-import Verify.NonFailConditions
-import Verify.Options
-import Verify.ProgInfo
-import Verify.Statistics
-import Verify.WithSMT
+import VerifyNonFail.CallTypes
+import VerifyNonFail.Files
+import VerifyNonFail.Helpers
+import VerifyNonFail.IOTypes
+import VerifyNonFail.NonFailConditions
+import VerifyNonFail.Options
+import VerifyNonFail.ProgInfo
+import VerifyNonFail.Statistics
+import VerifyNonFail.WithSMT
 
 ------------------------------------------------------------------------------
 

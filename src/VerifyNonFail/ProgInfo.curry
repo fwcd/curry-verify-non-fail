@@ -8,7 +8,7 @@
 --- @version March 2024
 ---------------------------------------------------------------------------
 
-module Verify.ProgInfo
+module VerifyNonFail.ProgInfo
  where
 
 import Data.IORef
@@ -22,7 +22,7 @@ import FlatCurry.Names    ( anonCons )
 import FlatCurry.Types
 import RW.Base
 
-import Verify.Helpers     ( fst3, trd3 )
+import VerifyNonFail.Helpers     ( fst3, trd3 )
 
 ------------------------------------------------------------------------------
 --- Read and transform a module in FlatCurry format.

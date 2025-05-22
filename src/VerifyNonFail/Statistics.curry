@@ -5,7 +5,7 @@
 --- @version January 2025
 -----------------------------------------------------------------------------
 
-module Verify.Statistics ( showStatistics, storeStatistics )
+module VerifyNonFail.Statistics ( showStatistics, storeStatistics )
   where
 
 import Control.Monad        ( when )
@@ -14,9 +14,9 @@ import AbstractCurry.Types  ( QName )
 import Analysis.TermDomain  ( TermDomain )
 import Text.CSV
 
-import Verify.CallTypes
-import Verify.IOTypes
-import Verify.Options
+import VerifyNonFail.CallTypes
+import VerifyNonFail.IOTypes
+import VerifyNonFail.Options
 
 ------------------------------------------------------------------------------
 -- Definition of directory and file names for various data.
