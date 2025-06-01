@@ -30,7 +30,7 @@ import VerifyNonFail.Helpers
 -- The input/output type is a disjunction of input/output type pairs.
 -- This is useful to infer call-types as well as output types of operations.
 -- Nevertheless, the output types should be inferred by a standard
--- fixpoint analysis and the analysis results can be used here.
+-- fixed-point analysis and the analysis results can be used here.
 
 --- An `InOutType` is a disjunction, represented as a list,
 --- of input/output type pairs.
