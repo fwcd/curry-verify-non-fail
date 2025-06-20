@@ -64,7 +64,8 @@ main = do
             exitWith 1
     ms -> do
       let vopts = defaultVOptions
-                    { voModules = ms
+                    { voName    = Just "VerifyNonFail"
+                    , voModules = ms
                     -- TODO: Logging etc.
                     }
       printWhenStatus opts banner
