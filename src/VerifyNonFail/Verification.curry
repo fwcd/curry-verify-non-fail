@@ -45,7 +45,7 @@ import System.Directory           ( createDirectoryIfMissing, doesFileExist
 import System.FilePath            ( (</>) )
 import System.Path                ( fileInPath )
 import System.Process             ( exitWith )
-import Verification.Env           ( VUFuncEnv )
+import Verification.Env           ( VUFuncEnv, VUProgEnv )
 import Verification.Run           ( runUntypedVerification )
 import Verification.Options       ( VOptions (..), defaultVOptions )
 import Verification.Monad         ( VM, throwVM )
