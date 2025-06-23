@@ -45,10 +45,13 @@ import System.Directory           ( createDirectoryIfMissing, doesFileExist
 import System.FilePath            ( (</>) )
 import System.Path                ( fileInPath )
 import System.Process             ( exitWith )
+import Verification.Env           ( VUFuncEnv )
 import Verification.Run           ( runUntypedVerification )
 import Verification.Options       ( VOptions (..), defaultVOptions )
+import Verification.Monad         ( VM, throwVM )
 import Verification.State         ( ppVState )
 import Verification.Types         ( UVerification, Verification (..), emptyVerification )
+import Verification.Update        ( VFuncUpdate (..), VUFuncUpdate, VUProgUpdate, simpleVFuncUpdate, emptyVProgUpdate, emptyVFuncUpdate )
 import XML
 
 -- Imports from package modules:
@@ -70,6 +73,17 @@ import VerifyNonFail.WithSMT
 
 --- The non-failure verifier as a framework verification.
 nonFailVerifier :: Options -> UVerification NonFailInfo
-nonFailVerifier _ = emptyVerification -- TODO: Implement this
+nonFailVerifier opts = emptyVerification
+  { vInit   = initFuncInfo
+  , vUpdate = updateFuncInfo opts
+  }
+
+initFuncInfo :: VUFuncEnv NonFailInfo -> VM (Maybe NonFailInfo)
+initFuncInfo env = do
+  return Nothing -- TODO
+
+updateFuncInfo :: Options -> VUFuncEnv NonFailInfo -> VM (VUFuncUpdate NonFailInfo)
+updateFuncInfo opts env = do
+  return emptyVFuncUpdate -- TODO
 
 ------------------------------------------------------------------------------
