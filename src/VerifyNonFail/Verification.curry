@@ -51,7 +51,7 @@ import Verification.Options       ( VOptions (..), defaultVOptions )
 import Verification.Monad         ( VM, throwVM )
 import Verification.State         ( ppVState )
 import Verification.Types         ( UVerification, Verification (..), emptyVerification )
-import Verification.Update        ( VFuncUpdate (..), VUFuncUpdate, VUProgUpdate, simpleVFuncUpdate, emptyVProgUpdate, emptyVFuncUpdate )
+import Verification.Update        ( VFuncUpdate (..), VProgUpdate (..), VUFuncUpdate, VUProgUpdate, VUProgUpdate, simpleVFuncUpdate, emptyVProgUpdate, emptyVFuncUpdate )
 import XML
 
 -- Imports from package modules:
@@ -74,9 +74,14 @@ import VerifyNonFail.WithSMT
 --- The non-failure verifier as a framework verification.
 nonFailVerifier :: Options -> UVerification NonFailInfo
 nonFailVerifier opts = emptyVerification
-  { vInit   = initFuncInfo
-  , vUpdate = updateFuncInfo opts
+  { vPreprocess = preprocessProg
+  , vInit       = initFuncInfo
+  , vUpdate     = updateFuncInfo opts
   }
+
+preprocessProg :: VUProgEnv NonFailInfo -> VM VUProgUpdate
+preprocessProg env = do
+  return emptyVProgUpdate
 
 initFuncInfo :: VUFuncEnv NonFailInfo -> VM (Maybe NonFailInfo)
 initFuncInfo env = do
