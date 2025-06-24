@@ -11,6 +11,8 @@
 module VerifyNonFail.Main ( main ) where
 
 import Control.Monad               ( unless, when )
+import Control.Monad.Trans.Class   ( MonadTrans (..) )
+import Control.Monad.Trans.State   ( execStateT, modify )
 import System.Environment          ( getArgs )
 import Text.Pretty                 ( pPrint )
 
@@ -52,10 +54,19 @@ main :: IO ()
 main = do
   args <- getArgs
   (opts0,progs) <- processOptions banner args
-  -- set analysis to top values if unspecified
-  let opts = if null (optDomainID opts0)
-               then opts0 { optDomainID = analysisName resultValueAnalysisTop }
-               else opts0
+
+  opts <- flip execStateT opts0 $ do
+    -- set analysis to top values if unspecified
+    when (null (optDomainID opts0)) $ do
+      modify $ \o -> o { optDomainID = analysisName resultValueAnalysisTop }
+    
+    -- check if Z3 can be found and disable SMT otherwise
+    z3exists <- lift $ fileInPath "z3"
+    let z3msg = "Option '--nosmt' activated since SMT solver Z3 not found in PATH!"
+    when (z3exists || not (optSMT opts0)) $ do
+      lift $ printInfoLine z3msg
+      modify $ \o -> o { optSMT = False }
+
   when (optDeleteCache opts0) $ deleteVerifyCacheDirectory opts0
   case progs of
     [] -> unless (optDeleteCache opts0) $ do
