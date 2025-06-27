@@ -72,11 +72,22 @@ import VerifyNonFail.WithSMT
 ------------------------------------------------------------------------------
 
 --- The non-failure verifier as a framework verification.
-nonFailVerifier :: Options -> UVerification NonFailInfo
-nonFailVerifier opts = emptyVerification
+nonFailVerifier :: Options -> Either String (UVerification NonFailInfo)
+nonFailVerifier opts =
+  if did == analysisName resultValueAnalysisTop
+    then Right $ nonFailureVerifierWith resultValueAnalysisTop opts
+    else if did == analysisName resultValueAnalysis2
+      then Right $ nonFailureVerifierWith resultValueAnalysis2 opts
+      else if did == analysisName resultValueAnalysis5
+        then Right $ nonFailureVerifierWith resultValueAnalysis5 opts
+        else Left $ "Unknown analysis domain ID: " ++ did
+  where did = optDomainID opts
+
+nonFailureVerifierWith :: TermDomain a => Analysis a -> Options -> UVerification NonFailInfo
+nonFailureVerifierWith valueanalysis opts = emptyVerification
   { vPreprocess = preprocessProg
   , vInit       = initFuncInfo
-  , vUpdate     = updateFuncInfo opts
+  , vUpdate     = updateFuncInfo valueanalysis opts
   }
 
 preprocessProg :: VUProgEnv NonFailInfo -> VM VUProgUpdate
@@ -87,8 +98,8 @@ initFuncInfo :: VUFuncEnv NonFailInfo -> VM (Maybe NonFailInfo)
 initFuncInfo env = do
   return Nothing -- TODO
 
-updateFuncInfo :: Options -> VUFuncEnv NonFailInfo -> VM (VUFuncUpdate NonFailInfo)
-updateFuncInfo opts env = do
+updateFuncInfo :: TermDomain a => Analysis a -> Options -> VUFuncEnv NonFailInfo -> VM (VUFuncUpdate NonFailInfo)
+updateFuncInfo valueanalysis opts env = do
   return emptyVFuncUpdate -- TODO
 
 ------------------------------------------------------------------------------

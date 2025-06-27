@@ -82,11 +82,12 @@ main = do
       printWhenStatus opts banner
       if optLegacy opts
         then runLegacy opts ms
-        else do
-          result <- runUntypedVerification (nonFailVerifier opts) vopts
-          case result of
-            Left e  -> putStrLn ("Verification failed: " ++ e) >> exitWith 1
-            Right s -> do
-              putStrLn . pPrint $ ppVState ppNonFailInfo s
+        else case nonFailVerifier opts of
+          Left s  -> putStrLn ("Could not create verification: " ++ s) >> exitWith 1
+          Right v -> do
+            result <- runUntypedVerification v vopts
+            case result of
+              Left e  -> putStrLn ("Verification failed: " ++ e) >> exitWith 1
+              Right s -> putStrLn . pPrint $ ppVState ppNonFailInfo s
 
 ------------------------------------------------------------------------------
