@@ -63,7 +63,7 @@ main = do
     -- check if Z3 can be found and disable SMT otherwise
     z3exists <- lift $ fileInPath "z3"
     let z3msg = "Option '--nosmt' activated since SMT solver Z3 not found in PATH!"
-    when (z3exists || not (optSMT opts0)) $ do
+    unless (z3exists || not (optSMT opts0)) $ do
       lift $ printInfoLine z3msg
       modify $ \o -> o { optSMT = False }
 
