@@ -34,7 +34,7 @@ import XML
 -- Imports from package modules:
 import Legacy.Run                 ( runLegacy )
 import VerifyNonFail.Files        ( deleteVerifyCacheDirectory )
-import VerifyNonFail.Info         ( ppNonFailInfo )
+import VerifyNonFail.Info         ( ppVerifyInfo )
 import VerifyNonFail.Options
 import VerifyNonFail.ProgInfo
 import VerifyNonFail.Statistics
@@ -94,6 +94,6 @@ main = do
             result <- runUntypedVerification v vopts
             case result of
               Left e  -> putStrLn ("Verification failed: " ++ e) >> exitWith 1
-              Right s -> putStrLn . pPrint $ ppVState ppNonFailInfo s
+              Right s -> putStrLn . pPrint $ ppVState ppVerifyInfo s
 
 ------------------------------------------------------------------------------
