@@ -26,7 +26,7 @@ import System.Path                ( fileInPath )
 import System.Process             ( exitWith )
 import Verification.Log           ( VLevel (..), printLog, withVLevel )
 import Verification.Run           ( runUntypedVerification )
-import Verification.Options       ( VOptions (..), defaultVOptions )
+import Verification.Options       ( VOptions (..), buildVOptions )
 import Verification.State         ( ppVState )
 import Verification.Types         ( UVerification, Verification (..), emptyVerification )
 import XML
@@ -80,11 +80,12 @@ main = do
                       | v > 1     -> VLevelDebug
                       | v > 0     -> VLevelInfo
                       | otherwise -> VLevelNone
-          vopts = defaultVOptions
-                    { voName    = Just "VerifyNonFail"
-                    , voModules = ms
-                    , voLog     = withVLevel vlvl printLog
-                    }
+
+      vopts <- buildVOptions "VerifyNonFail" $ \o -> o
+        { voModules = ms
+        , voLog     = withVLevel vlvl printLog
+        }
+
       printWhenStatus opts banner
       if optLegacy opts
         then runLegacy opts ms
