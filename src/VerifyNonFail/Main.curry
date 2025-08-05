@@ -82,8 +82,10 @@ main = do
                       | otherwise -> VLevelNone
 
       vopts <- buildVOptions "VerifyNonFail" $ \o -> o
-        { voModules = ms
-        , voLog     = withVLevel vlvl printLog
+        { voModules   = ms
+        , voLog       = withVLevel vlvl printLog
+          -- TODO: Enable caching
+        , voCacheKeys = [optDomainID opts]
         }
 
       printWhenStatus opts banner
