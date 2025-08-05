@@ -24,6 +24,7 @@ import System.Directory           ( createDirectoryIfMissing, doesFileExist
 import System.FilePath            ( (</>) )
 import System.Path                ( fileInPath )
 import System.Process             ( exitWith )
+import Verification.Log           ( VLevel (..), printLog, withVLevel )
 import Verification.Run           ( runUntypedVerification )
 import Verification.Options       ( VOptions (..), defaultVOptions )
 import Verification.State         ( ppVState )
@@ -74,10 +75,15 @@ main = do
             printInfoLine "Try option '--help' for usage information."
             exitWith 1
     ms -> do
-      let vopts = defaultVOptions
+      let vlvl  = case optVerb opts of
+                    v | v > 2     -> VLevelAll
+                      | v > 1     -> VLevelDebug
+                      | v > 0     -> VLevelInfo
+                      | otherwise -> VLevelNone
+          vopts = defaultVOptions
                     { voName    = Just "VerifyNonFail"
                     , voModules = ms
-                    -- TODO: Logging etc.
+                    , voLog     = withVLevel vlvl printLog
                     }
       printWhenStatus opts banner
       if optLegacy opts
