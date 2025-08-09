@@ -29,6 +29,7 @@ import Control.Monad.Trans.Class  ( lift )
 import Control.Monad.Trans.State  ( StateT, get, put, execStateT )
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Functor.Invariant     ( Invariant (..) )
 import Data.Time                  ( ClockTime )
 import Debug.Profile
 import FlatCurry.AddTypes         ( applyTSubst, splitArgTypes )
@@ -50,7 +51,7 @@ import Verification.Run           ( runUntypedVerification )
 import Verification.Options       ( VOptions (..), defaultVOptions )
 import Verification.Monad         ( VM, throwVM )
 import Verification.State         ( ppVState )
-import Verification.Types         ( UVerification, Verification (..), emptyVerification, mapVerification )
+import Verification.Types         ( UVerification, Verification (..), emptyVerification )
 import Verification.Update        ( VFuncUpdate (..), VProgUpdate (..), VUFuncUpdate, VUProgUpdate, VUProgUpdate, simpleVFuncUpdate, emptyVProgUpdate, emptyVFuncUpdate )
 import XML
 
@@ -75,11 +76,11 @@ import VerifyNonFail.WithSMT
 nonFailVerifier :: Options -> Either String (UVerification (VerifyInfo AnyDomain))
 nonFailVerifier opts =
   if did == analysisName resultValueAnalysisTop
-    then Right . mapVerification (TopDomain <$>) (fromTopDomain <$>) $ nonFailureVerifierWith resultValueAnalysisTop opts
+    then Right . invmap (TopDomain <$>) (fromTopDomain <$>) $ nonFailureVerifierWith resultValueAnalysisTop opts
     else if did == analysisName resultValueAnalysis2
-      then Right . mapVerification (D2Domain <$>) (fromD2Domain <$>) $ nonFailureVerifierWith resultValueAnalysis2 opts
+      then Right . invmap (D2Domain <$>) (fromD2Domain <$>) $ nonFailureVerifierWith resultValueAnalysis2 opts
       else if did == analysisName resultValueAnalysis5
-        then Right . mapVerification (D5Domain <$>) (fromD5Domain <$>) $ nonFailureVerifierWith resultValueAnalysis5 opts
+        then Right . invmap (D5Domain <$>) (fromD5Domain <$>) $ nonFailureVerifierWith resultValueAnalysis5 opts
         else Left $ "Unknown analysis domain ID: " ++ did
   where did = optDomainID opts
 
