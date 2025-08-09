@@ -9,6 +9,7 @@ import Data.IORef
 import Data.List
 
 import Analysis.ProgInfo
+import Analysis.TermDomain
 import Analysis.Types
 import CASS.Configuration ( CConfig(..), getDefaultCConfig )
 import CASS.Options       ( Options(..), defaultOptions )
@@ -204,5 +205,29 @@ snd3 (_,y,_) = y
 
 trd3 :: (a,b,c) -> c
 trd3 (_,_,z) = z
+
+------------------------------------------------------------------------------
+
+--- An abstract term domain.
+data AnyDomain = TopDomain AType | D2Domain DType2 | D5Domain DType5
+  deriving (Read, Show, Eq)
+
+fromTopDomain :: AnyDomain -> AType
+fromTopDomain d = case d of
+  TopDomain at -> at
+  D2Domain _   -> error "fromTopDomain: Got D2Domain"
+  D5Domain _   -> error "fromTopDomain: Got D5Domain"
+
+fromD2Domain :: AnyDomain -> DType2
+fromD2Domain d = case d of
+  TopDomain _ -> error "fromD2Domain: Got TopDomain"
+  D2Domain d2 -> d2
+  D5Domain _  -> error "fromD2Domain: Got D5Domain"
+
+fromD5Domain :: AnyDomain -> DType5
+fromD5Domain d = case d of
+  TopDomain _ -> error "fromD5Domain: Got TopDomain"
+  D2Domain _  -> error "fromD5Domain: Got D2Domain"
+  D5Domain d5 -> d5
 
 ------------------------------------------------------------------------------

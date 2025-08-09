@@ -8,7 +8,7 @@
 
 module VerifyNonFail.IOTypes
   ( InOutType(..), valueInOutType, trivialInOutType, isAnyIOType, showIOT
-  , valuesOfIOT, inOutATypeFunc
+  , valuesOfIOT, inOutATypeFunc, mapIOTDomain
   , VarTypes, VarTypesMap, ioVarType, showVarTypes, showArgumentVars
   , addVarType2Map, concVarTypesMap, setVarTypeInMap
   , bindVarInIOTypes, simplifyVarTypes
@@ -36,7 +36,7 @@ import VerifyNonFail.Helpers
 --- of input/output type pairs.
 --- It is parameterized over the abstract term domain.
 data InOutType a = IOT [([a],a)]
-  deriving (Eq, Show)
+  deriving (Eq, Show, Read)
 
 --- The `InOutType` of a value or constant having a given abstract type.
 valueInOutType :: TermDomain a => a -> InOutType a
@@ -74,6 +74,10 @@ normalizeIOT (IOT iotypes) =
   joinOuts ((ict,oct):iots) =
     let (iots1,iots2) = partition ((== ict) . fst) iots
     in (ict, foldr1 lubType (oct : map snd iots1)) : joinOuts iots2
+
+--- Maps the abstract term domain of an `InOutType`.
+mapIOTDomain :: (a -> b) -> InOutType a -> InOutType b
+mapIOTDomain f (IOT iots) = IOT $ (\(ict, oct) -> (f <$> ict, f oct)) <$> iots
 
 ------------------------------------------------------------------------------
 --- The state passed to compute call types contains a mapping from

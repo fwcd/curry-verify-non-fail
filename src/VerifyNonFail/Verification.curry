@@ -50,7 +50,7 @@ import Verification.Run           ( runUntypedVerification )
 import Verification.Options       ( VOptions (..), defaultVOptions )
 import Verification.Monad         ( VM, throwVM )
 import Verification.State         ( ppVState )
-import Verification.Types         ( UVerification, Verification (..), emptyVerification )
+import Verification.Types         ( UVerification, Verification (..), emptyVerification, mapVerification )
 import Verification.Update        ( VFuncUpdate (..), VProgUpdate (..), VUFuncUpdate, VUProgUpdate, VUProgUpdate, simpleVFuncUpdate, emptyVProgUpdate, emptyVFuncUpdate )
 import XML
 
@@ -72,33 +72,33 @@ import VerifyNonFail.WithSMT
 ------------------------------------------------------------------------------
 
 --- The non-failure verifier as a framework verification.
-nonFailVerifier :: Options -> Either String (UVerification VerifyInfo)
+nonFailVerifier :: Options -> Either String (UVerification (VerifyInfo AnyDomain))
 nonFailVerifier opts =
   if did == analysisName resultValueAnalysisTop
-    then Right $ nonFailureVerifierWith resultValueAnalysisTop opts
+    then Right . mapVerification (TopDomain <$>) (fromTopDomain <$>) $ nonFailureVerifierWith resultValueAnalysisTop opts
     else if did == analysisName resultValueAnalysis2
-      then Right $ nonFailureVerifierWith resultValueAnalysis2 opts
+      then Right . mapVerification (D2Domain <$>) (fromD2Domain <$>) $ nonFailureVerifierWith resultValueAnalysis2 opts
       else if did == analysisName resultValueAnalysis5
-        then Right $ nonFailureVerifierWith resultValueAnalysis5 opts
+        then Right . mapVerification (D5Domain <$>) (fromD5Domain <$>) $ nonFailureVerifierWith resultValueAnalysis5 opts
         else Left $ "Unknown analysis domain ID: " ++ did
   where did = optDomainID opts
 
-nonFailureVerifierWith :: TermDomain a => Analysis a -> Options -> UVerification VerifyInfo
+nonFailureVerifierWith :: TermDomain a => Analysis a -> Options -> UVerification (VerifyInfo a)
 nonFailureVerifierWith valueanalysis opts = emptyVerification
   { vPreprocess = preprocessProg
   , vInit       = initFuncInfo
   , vUpdate     = updateFuncInfo valueanalysis opts
   }
 
-preprocessProg :: VUProgEnv VerifyInfo -> VM VUProgUpdate
+preprocessProg :: TermDomain a => VUProgEnv (VerifyInfo a) -> VM VUProgUpdate
 preprocessProg env = do
   return emptyVProgUpdate
 
-initFuncInfo :: VUFuncEnv VerifyInfo -> VM (Maybe VerifyInfo)
+initFuncInfo :: TermDomain a => VUFuncEnv (VerifyInfo a) -> VM (Maybe (VerifyInfo a))
 initFuncInfo env = do
   return Nothing -- TODO
 
-updateFuncInfo :: TermDomain a => Analysis a -> Options -> VUFuncEnv VerifyInfo -> VM (VUFuncUpdate VerifyInfo)
+updateFuncInfo :: TermDomain a => Analysis a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
 updateFuncInfo valueanalysis opts env = do
   return emptyVFuncUpdate -- TODO
 

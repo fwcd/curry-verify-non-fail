@@ -380,6 +380,10 @@ subtypeOfRequiredCallType ats (Just rats) =
 isSubtypeOf :: TermDomain a => a -> a -> Bool
 isSubtypeOf  at1 at2  = joinType at1 at2 == at1
 
+--- Maps over the abstract call type's term domain.
+mapATypeDomain :: (a -> b) -> ACallType a -> ACallType b
+mapATypeDomain = fmap fmap fmap
+
 ------------------------------------------------------------------------------
 
 --- Is it possible to specialize the abstract types of the given
