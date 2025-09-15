@@ -83,7 +83,7 @@ checkUnsatisfiabilityWithSMT opts qf scripttitle pistore consinfos
 
 
 checkUnsatWithSMT :: Options -> QName -> String -> IORef ProgInfo
-                  -> M.Map QName ConsInfo 
+                  -> M.Map QName ConsInfo
                   -> [(Int,TypeExpr)] -> [(Int,Sort)]
                   -> Term -> [QName] -> [QName] -> IO (Maybe Bool)
 checkUnsatWithSMT opts qf title pistore consinfos vartypes
