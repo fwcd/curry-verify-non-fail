@@ -47,7 +47,7 @@ import System.Directory           ( createDirectoryIfMissing, doesFileExist
 import System.FilePath            ( (</>) )
 import System.Path                ( fileInPath )
 import System.Process             ( exitWith )
-import Verification.Env           ( VUFuncEnv, VUProgEnv, currentProg )
+import Verification.Env           ( VUFuncEnv, VUProgEnv, currentProg, currentFuncName )
 import Verification.Run           ( runUntypedVerification )
 import Verification.Options       ( VOptions (..), defaultVOptions )
 import Verification.Monad         ( VM, throwVM )
@@ -104,7 +104,7 @@ preprocessProg gs env = do
       visfuncs     = map funcName (filter ((== Public) . funcVisibility) orgfdecls)
 
   liftIO $ modifyIORef gs $ \s -> s
-    { vgsConsInfos    = M.union (M.fromList modconsinfos) (vgsConsInfos s)
+    { vgsConsInfos    = M.union modconsinfos (vgsConsInfos s)
     , vgsVisibleFuncs = S.union (S.fromList visfuncs) (vgsVisibleFuncs s)
     }
 
@@ -112,16 +112,26 @@ preprocessProg gs env = do
 
 initFuncInfo :: TermDomain a => Options -> IORef VerifyGlobalState -> VUFuncEnv (VerifyInfo a) -> VM (Maybe (VerifyInfo a))
 initFuncInfo opts gs env = do
-  consinfos <- liftIO $ vgsConsInfos <$> readIORef gs
+  prog <- currentProg env
+  let qn = currentFuncName env
+
+  (consinfos, isVisible) <- do
+    s <- liftIO $ readIORef gs
+    return (vgsConsInfos s, flip S.member (vgsVisibleFuncs s))
 
   -- infer initial abstract call type:
+  (acalltypes, numntacalltypes, numpubacalltypes) <- id $!! inferCallTypes opts consinfos isVisible prog
+
   -- TODO
 
   return . Just $ emptyVerifyInfo
+    { viCallType = lookup qn acalltypes -- TODO: We currently compute too much by inferring the whole module
+    }
 
 updateFuncInfo :: TermDomain a => IORef VerifyGlobalState -> Analysis a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
 updateFuncInfo gs valueanalysis opts env = do
-  return emptyVFuncUpdate -- TODO
+  -- TODO
+  return emptyVFuncUpdate
 
 --- Global internal state that is held across the whole verification
 --- lifecycle in an IORef. Mostly used for non-failure verification-specific
@@ -154,5 +164,33 @@ data VerifyState a = VerifyState
   , vstToolOpts        :: Options
   , vstError           :: Bool
   }
+
+--- Infer the initial (abstract) call types of all functions in a program and
+--- return them together with the number of all/public non-trivial call types.
+--- The last argument are the already stored old call types, if they are
+--- up to date.
+inferCallTypes :: TermDomain a => Options -> M.Map QName ConsInfo
+               -> (QName -> Bool) -> Prog
+               -> VM ([(QName, ACallType a)], Int, Int)
+inferCallTypes opts consinfos isVisible flatprog = do
+  let fdecls       = progFuncs flatprog
+  let calltypes    = callTypeFunc opts consinfos <$> fdecls
+      ntcalltypes  = filter (not . isTotalCallType . snd) calltypes
+      pubcalltypes = filter (isVisible . fst) ntcalltypes
+
+  if optVerb opts > 2
+    then liftIO . printInfoLine $ unlines $ "CONCRETE CALL TYPES OF ALL OPERATIONS:" :
+           showFunResults prettyFunCallTypes calltypes
+    else when (optVerb opts > 2 || optCallTypes opts) $
+      liftIO . printInfoLine $ unlines $
+        ("NON-TRIVIAL CONCRETE CALL TYPES OF " ++
+         (if optPublic opts then "PUBLIC" else "ALL") ++ " OPERATIONS:") :
+        showFunResults prettyFunCallTypes
+         (sortFunResults (if optPublic opts then pubcalltypes else ntcalltypes))
+
+  let acalltypes    = funcCallType2AType consinfos <$> calltypes
+      ntacalltypes  = filter (not . isTotalACallType . snd) acalltypes
+      pubacalltypes = filter (isVisible . fst) ntacalltypes
+  return (acalltypes, length ntacalltypes, length pubacalltypes)
 
 ------------------------------------------------------------------------------
