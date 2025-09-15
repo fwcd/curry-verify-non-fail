@@ -91,6 +91,8 @@ nonFailureVerifierWith valueanalysis opts = emptyVerification
   , vUpdate     = updateFuncInfo valueanalysis opts
   }
 
+
+
 preprocessProg :: TermDomain a => VUProgEnv (VerifyInfo a) -> VM VUProgUpdate
 preprocessProg env = do
   return emptyVProgUpdate
@@ -102,5 +104,25 @@ initFuncInfo env = do
 updateFuncInfo :: TermDomain a => Analysis a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
 updateFuncInfo valueanalysis opts env = do
   return emptyVFuncUpdate -- TODO
+
+--- Internally cached state that is held across the whole verification
+--- lifecycle in an IORef. Mostly used for non-failure verification-specific
+--- caching purposes.
+data VerifyState a = VerifyState
+  { vstConsInfos       :: [(QName,ConsInfo)]         -- infos about all constructors
+  , vstFreshVar        :: Int                        -- fresh variable index in a rule
+  , vstVarExp          :: [(Int,TypeExpr,Expr)]      -- map variable to its type and
+                                                     -- subexpression
+  , vstVarTypes        :: VarTypesMap a              -- map variable to its abstract types
+  , vstCondition       :: Expr -> Expr               -- current branch condition (with hole)
+  , vstFailedFuncs     :: [(QName,Int,Expr)]         -- functions with illegal calls
+  , vstPartialBranches :: [(QName,Int,Expr,[QName])] -- incomplete branches
+  , vstNewFailed       :: [(QName,ACallType a)]      -- new failed function call types
+  , vstStats           :: (Int,Int,Int)              -- number of: non-trivial calls /
+                                                     -- incomplete cases /
+                                                     -- SMT-checked non-trivial calls
+  , vstToolOpts        :: Options
+  , vstError           :: Bool
+  }
 
 ------------------------------------------------------------------------------
