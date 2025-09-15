@@ -126,7 +126,7 @@ data VerifyGlobalState = VerifyGlobalState
 
 emptyGlobalState :: VerifyGlobalState
 emptyGlobalState = VerifyGlobalState
-  { vgsConsInfos = []
+  { vgsConsInfos = M.empty
   }
 
 --- Local internal state.
