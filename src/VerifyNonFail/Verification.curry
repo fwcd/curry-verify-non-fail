@@ -90,7 +90,7 @@ nonFailureVerifierWith valueanalysis opts = do
   gs <- newIORef emptyGlobalState
   return emptyVerification
     { vPreprocess = preprocessProg gs
-    , vInit       = initFuncInfo gs
+    , vInit       = initFuncInfo opts gs
     , vUpdate     = updateFuncInfo gs valueanalysis opts
     }
 
@@ -98,15 +98,21 @@ preprocessProg :: TermDomain a => IORef VerifyGlobalState -> VUProgEnv (VerifyIn
 preprocessProg gs env = do
   prog <- currentProg env
 
-  -- Compute cons infos for module
+  -- Compute module-level auxiliaries
   let modconsinfos = consInfoOfTypeDecls (progTypes prog)
-  liftIO $ modifyIORef gs $ \s -> s { vgsConsInfos = M.union (M.fromList modconsinfos) (vgsConsInfos s) }
+      orgfdecls    = progFuncs prog
+      visfuncs     = map funcName (filter ((== Public) . funcVisibility) orgfdecls)
+
+  liftIO $ modifyIORef gs $ \s -> s
+    { vgsConsInfos    = M.union (M.fromList modconsinfos) (vgsConsInfos s)
+    , vgsVisibleFuncs = S.union (S.fromList visfuncs) (vgsVisibleFuncs s)
+    }
 
   return emptyVProgUpdate
 
-initFuncInfo :: TermDomain a => IORef VerifyGlobalState -> VUFuncEnv (VerifyInfo a) -> VM (Maybe (VerifyInfo a))
-initFuncInfo gs env = do
-  -- consinfos <- TODO
+initFuncInfo :: TermDomain a => Options -> IORef VerifyGlobalState -> VUFuncEnv (VerifyInfo a) -> VM (Maybe (VerifyInfo a))
+initFuncInfo opts gs env = do
+  consinfos <- liftIO $ vgsConsInfos <$> readIORef gs
 
   -- infer initial abstract call type:
   -- TODO
@@ -121,12 +127,14 @@ updateFuncInfo gs valueanalysis opts env = do
 --- lifecycle in an IORef. Mostly used for non-failure verification-specific
 --- caching purposes.
 data VerifyGlobalState = VerifyGlobalState
-  { vgsConsInfos :: M.Map QName ConsInfo  -- infos about all constructors
+  { vgsConsInfos    :: M.Map QName ConsInfo  -- infos about all constructors
+  , vgsVisibleFuncs :: S.Set QName           -- public functions
   }
 
 emptyGlobalState :: VerifyGlobalState
 emptyGlobalState = VerifyGlobalState
-  { vgsConsInfos = M.empty
+  { vgsConsInfos    = M.empty
+  , vgsVisibleFuncs = S.empty
   }
 
 --- Local internal state.
