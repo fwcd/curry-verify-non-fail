@@ -73,25 +73,25 @@ import VerifyNonFail.WithSMT
 ------------------------------------------------------------------------------
 
 --- The non-failure verifier as a framework verification.
-nonFailVerifier :: Options -> Either String (UVerification (VerifyInfo AnyDomain))
+nonFailVerifier :: Options -> IO (Either String (UVerification (VerifyInfo AnyDomain)))
 nonFailVerifier opts =
   if did == analysisName resultValueAnalysisTop
-    then Right . invmap (TopDomain <$>) (fromTopDomain <$>) $ nonFailureVerifierWith resultValueAnalysisTop opts
+    then Right . invmap (TopDomain <$>) (fromTopDomain <$>) <$> nonFailureVerifierWith resultValueAnalysisTop opts
     else if did == analysisName resultValueAnalysis2
-      then Right . invmap (D2Domain <$>) (fromD2Domain <$>) $ nonFailureVerifierWith resultValueAnalysis2 opts
+      then Right . invmap (D2Domain <$>) (fromD2Domain <$>) <$> nonFailureVerifierWith resultValueAnalysis2 opts
       else if did == analysisName resultValueAnalysis5
-        then Right . invmap (D5Domain <$>) (fromD5Domain <$>) $ nonFailureVerifierWith resultValueAnalysis5 opts
-        else Left $ "Unknown analysis domain ID: " ++ did
+        then Right . invmap (D5Domain <$>) (fromD5Domain <$>) <$> nonFailureVerifierWith resultValueAnalysis5 opts
+        else return . Left $ "Unknown analysis domain ID: " ++ did
   where did = optDomainID opts
 
-nonFailureVerifierWith :: TermDomain a => Analysis a -> Options -> UVerification (VerifyInfo a)
-nonFailureVerifierWith valueanalysis opts = emptyVerification
-  { vPreprocess = preprocessProg
-  , vInit       = initFuncInfo
-  , vUpdate     = updateFuncInfo valueanalysis opts
-  }
-
-
+nonFailureVerifierWith :: TermDomain a => Analysis a -> Options -> IO (UVerification (VerifyInfo a))
+nonFailureVerifierWith valueanalysis opts = do
+  gs <- newIORef emptyGlobalState
+  return emptyVerification
+    { vPreprocess = preprocessProg
+    , vInit       = initFuncInfo
+    , vUpdate     = updateFuncInfo valueanalysis opts
+    }
 
 preprocessProg :: TermDomain a => VUProgEnv (VerifyInfo a) -> VM VUProgUpdate
 preprocessProg env = do
@@ -99,15 +99,30 @@ preprocessProg env = do
 
 initFuncInfo :: TermDomain a => VUFuncEnv (VerifyInfo a) -> VM (Maybe (VerifyInfo a))
 initFuncInfo env = do
-  return Nothing -- TODO
+  -- consinfos <- TODO
+
+  -- infer initial abstract call type:
+  -- TODO
+
+  return . Just $ emptyVerifyInfo
 
 updateFuncInfo :: TermDomain a => Analysis a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
 updateFuncInfo valueanalysis opts env = do
   return emptyVFuncUpdate -- TODO
 
---- Internally cached state that is held across the whole verification
+--- Global internal state that is held across the whole verification
 --- lifecycle in an IORef. Mostly used for non-failure verification-specific
 --- caching purposes.
+data VerifyGlobalState = VerifyGlobalState
+  { vgsConsInfos :: [(QName,ConsInfo)]         -- infos about all constructors
+  }
+
+emptyGlobalState :: VerifyGlobalState
+emptyGlobalState = VerifyGlobalState
+  { vgsConsInfos = []
+  }
+
+--- Local internal state.
 data VerifyState a = VerifyState
   { vstConsInfos       :: [(QName,ConsInfo)]         -- infos about all constructors
   , vstFreshVar        :: Int                        -- fresh variable index in a rule
