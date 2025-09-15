@@ -21,6 +21,7 @@ module VerifyNonFail.Files
 
 import Control.Monad        ( unless, when )
 import Data.List            ( find, intercalate, isPrefixOf, isSuffixOf, sortBy )
+import qualified Data.Map as M
 
 import Curry.Compiler.Distribution ( installDir )
 
@@ -296,7 +297,7 @@ readNonFailCondFile opts mtimesrc mname = do
 --- `_CALLTYPES`.
 --- If the file does not exist, try to read a file from the `include`
 --- directory (for standard libraries).
-readPublicCallTypeModule :: Options -> [(QName,ConsInfo)] -> ClockTime -> String
+readPublicCallTypeModule :: Options -> M.Map QName ConsInfo -> ClockTime -> String
                          -> IO [(QName,[[CallType]])]
 readPublicCallTypeModule opts consinfos mtimesrc mname = do
   let specmname = callTypesModule mname
@@ -335,7 +336,7 @@ readPublicCallTypeModule opts consinfos mtimesrc mname = do
 --- Reads a call type specification file for a module
 --- if it is up-to-date (where the modification time of the module
 --- is passed as the second argument).
-readCallTypeSpecMod :: [(QName,ConsInfo)] -> String -> String
+readCallTypeSpecMod :: M.Map QName ConsInfo -> String -> String
                     -> IO [(QName,[[CallType]])]
 readCallTypeSpecMod consinfos mname specmname = do
   smod <- readCurry specmname
@@ -344,7 +345,7 @@ readCallTypeSpecMod consinfos mname specmname = do
  where
   isSpecFunc fd = "'calltype" `isSuffixOf` snd (funcName fd)
 
-maybeCons2CallTypes :: [(QName,ConsInfo)] -> [[Maybe [String]]]
+maybeCons2CallTypes :: M.Map QName ConsInfo -> [[Maybe [String]]]
                     -> [[CallType]]
 maybeCons2CallTypes consinfos cts = map (map mb2ct) cts
  where
@@ -353,7 +354,7 @@ maybeCons2CallTypes consinfos cts = map (map mb2ct) cts
    where
     mb2cs qc = (qc, take (arityOfCons consinfos qc) (repeat AnyT))
 
-fromSpecFunc :: [(QName,ConsInfo)] -> String -> CFuncDecl
+fromSpecFunc :: M.Map QName ConsInfo -> String -> CFuncDecl
              -> (QName, [[CallType]])
 fromSpecFunc consinfos mname fdecl =
   ((mname,fname),

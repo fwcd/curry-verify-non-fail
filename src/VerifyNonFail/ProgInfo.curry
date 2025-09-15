@@ -14,7 +14,7 @@ module VerifyNonFail.ProgInfo
 import Data.IORef
 import Data.List          ( (\\), find )
 
-import qualified Data.Map as Map
+import qualified Data.Map as M
 import FlatCurry.Build    ( fcFailed, pre )
 import FlatCurry.FilesRW  ( readFlatCurry )
 import FlatCurry.Goodies
@@ -57,7 +57,7 @@ removeTopForallType = updProgFuncs (map rmForallTypeInFunc)
 --- constructors grouped by their data type. If the second argument is `True`,
 --- only a single branch with an anonymous pattern is added (if necessary),
 --- otherwise branches for all missing patterns are added.
-completeBranchesInFunc :: [(QName,ConsInfo)] -> Bool -> FuncDecl -> FuncDecl
+completeBranchesInFunc :: M.Map QName ConsInfo -> Bool -> FuncDecl -> FuncDecl
 completeBranchesInFunc consinfos withanon = updFuncBody (updCases completeCase)
  where
   completeCase ct e brs = Case ct e $ case brs of
@@ -87,15 +87,15 @@ data ConsType = ConsType [TypeExpr] QName [Int]
  deriving (Show, Read, Eq)
 
 --- Transforms a list of type declarations into constructor information.
-consInfoOfTypeDecls :: [TypeDecl] -> [(QName,ConsInfo)]
-consInfoOfTypeDecls = concatMap consInfoOfTypeDecl
+consInfoOfTypeDecls :: [TypeDecl] -> M.Map QName ConsInfo
+consInfoOfTypeDecls = foldr M.union M.empty . map consInfoOfTypeDecl
 
 --- Transforms a type declaration into constructor information.
-consInfoOfTypeDecl :: TypeDecl -> [(QName,ConsInfo)]
-consInfoOfTypeDecl (TypeSyn _ _ _ _)                    = []
+consInfoOfTypeDecl :: TypeDecl -> M.Map QName ConsInfo
+consInfoOfTypeDecl (TypeSyn _ _ _ _)                    = M.empty
 consInfoOfTypeDecl (TypeNew nt _ tvs (NewCons qc _ te)) =
-  [(qc, (1, ConsType [te] nt (map fst tvs), []))]
-consInfoOfTypeDecl (Type qt _ tvs cdecls) =
+  M.singleton qc (1, ConsType [te] nt (map fst tvs), [])
+consInfoOfTypeDecl (Type qt _ tvs cdecls) = M.fromList $
   map (\(Cons qc ar _ texps) ->
         (qc,
          (ar,
@@ -105,26 +105,26 @@ consInfoOfTypeDecl (Type qt _ tvs cdecls) =
       cdecls
 
 --- Gets the the information about a given constructor name.
-infoOfCons :: [(QName,ConsInfo)] -> QName -> ConsInfo
+infoOfCons :: M.Map QName ConsInfo -> QName -> ConsInfo
 infoOfCons consinfos qc@(mn,cn) =
   maybe (error $ "No info for constructor '" ++ mn ++ "." ++ cn ++ "' found!")
         id
-        (lookup qc consinfos)
+        (M.lookup qc consinfos)
 
 --- Gets the arity of a constructor from information about all constructors.
-arityOfCons :: [(QName,ConsInfo)] -> QName -> Int
+arityOfCons :: M.Map QName ConsInfo -> QName -> Int
 arityOfCons consinfos qc@(mn,_)
   | null mn   = 0 -- literal
   | otherwise = fst3 (infoOfCons consinfos qc)
 
 --- Gets the siblings of a constructor w.r.t. constructor information.
-siblingsOfCons :: [(QName,ConsInfo)] -> QName -> [(QName,Int)]
+siblingsOfCons :: M.Map QName ConsInfo -> QName -> [(QName,Int)]
 siblingsOfCons consinfos qc = trd3 (infoOfCons consinfos qc)
 
 --- Is a non-empty list of constructors complete, i.e., does it contain
 --- all the constructors of a type?
 --- The first argument contains information about all constructors in a program.
-isCompleteConstructorList :: [(QName,ConsInfo)] -> [QName] -> Bool
+isCompleteConstructorList :: M.Map QName ConsInfo -> [QName] -> Bool
 isCompleteConstructorList _         []     = False
 isCompleteConstructorList consinfos (c:cs)
   | null (fst c) = False -- literals are never complete
@@ -146,18 +146,18 @@ emptyProgInfo = ProgInfo []
 -- declared in the module grouped by their types
 data ModInfo = ModInfo
   { miProg    :: Prog
-  , miFTypes  :: Map.Map String TypeExpr
-  , miCInfos  :: Map.Map String ConsInfo
+  , miFTypes  :: M.Map String TypeExpr
+  , miCInfos  :: M.Map String ConsInfo
   }
 
 -- Generates a `ProgInfo` entry for a given FlatCurry program.
 prog2ModInfo :: Prog -> ModInfo
 prog2ModInfo prog =
   ModInfo prog 
-          (Map.fromList (map (\fd -> (snd (funcName fd), funcType fd))
-                             (progFuncs prog)))
-          (Map.fromList (map (\(qc, cinfo) -> (snd qc, cinfo))
-                             (consInfoOfTypeDecls (progTypes prog))))
+          (M.fromList (map (\fd -> (snd (funcName fd), funcType fd))
+                           (progFuncs prog)))
+          (M.fromList (map (\(qc, cinfo) -> (snd qc, cinfo))
+                           (M.toList (consInfoOfTypeDecls (progTypes prog)))))
 
 ------------------------------------------------------------------------------
 -- Access operations

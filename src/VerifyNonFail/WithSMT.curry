@@ -14,6 +14,7 @@ import Data.IORef
 import Data.List         ( (\\), find, init, isPrefixOf, last, maximum, nub
                          , partition, union )
 import Data.Maybe        ( catMaybes, fromMaybe, isJust )
+import qualified Data.Map as M
 import Numeric           ( readHex )
 import System.CPUTime    ( getCPUTime )
 import System.Directory  ( doesFileExist )
@@ -45,7 +46,7 @@ import PackageConfig      ( getPackagePath )
 -- is checked.
 -- `Nothing` is returned if there is some error w.r.t. SMT solving.
 checkUnsatisfiabilityWithSMT :: Options -> QName -> String -> IORef ProgInfo
-          -> [(QName,ConsInfo)] -> [(Int,TypeExpr)] -> Expr -> IO (Maybe Bool)
+          -> M.Map QName ConsInfo -> [(Int,TypeExpr)] -> Expr -> IO (Maybe Bool)
 checkUnsatisfiabilityWithSMT opts qf scripttitle pistore consinfos
                              vartypes assertionexp0 = do
   let assertionexp = wrapCaseWithId assertionexp0
@@ -82,7 +83,7 @@ checkUnsatisfiabilityWithSMT opts qf scripttitle pistore consinfos
 
 
 checkUnsatWithSMT :: Options -> QName -> String -> IORef ProgInfo
-                  -> [(QName,ConsInfo)] 
+                  -> M.Map QName ConsInfo 
                   -> [(Int,TypeExpr)] -> [(Int,Sort)]
                   -> Term -> [QName] -> [QName] -> IO (Maybe Bool)
 checkUnsatWithSMT opts qf title pistore consinfos vartypes

@@ -8,6 +8,7 @@
 module VerifyNonFail.CallTypes where
 
 import Data.List
+import qualified Data.Map as M
 
 import Analysis.TermDomain ( TermDomain(..), litAsCons )
 import FlatCurry.Goodies
@@ -62,7 +63,7 @@ prettyCallTypeArgs cts = case cts of
 
 --- Simplify call types by recursively transforming each complete
 --- list of constructors with `AnyT` arguments to `AnyT`.
-simpFuncCallType :: [(QName,ConsInfo)] -> [[CallType]] -> [[CallType]]
+simpFuncCallType :: M.Map QName ConsInfo -> [[CallType]] -> [[CallType]]
 simpFuncCallType consinfos ctss =
   let ctss' = foldr addCTArgs [] (map (map simpCallType) ctss)
   in if ctss' == ctss then ctss
@@ -186,7 +187,7 @@ initCallTypeState opts qf vs =
 --- (represented as a list) of alternative call types
 --- where each element in the disjunction is list of `n` call types for
 --- each argument.
-callTypeFunc :: Options -> [(QName,ConsInfo)] -> FuncDecl -> (QName,[[CallType]])
+callTypeFunc :: Options -> M.Map QName ConsInfo -> FuncDecl -> (QName,[[CallType]])
 callTypeFunc opts consinfos (Func qf ar _ _ rule) =
   maybe
     (case rule of
@@ -197,13 +198,13 @@ callTypeFunc opts consinfos (Func qf ar _ _ rule) =
            else (qf, simpFuncCallType consinfos
                        (callTypeExpr (initCallTypeState opts qf vs) exp)))
      (\ct -> (qf,ct))
-     (lookup qf defaultCallTypes)
+     (M.lookup qf defaultCallTypes)
 
 --- Some call types for predefined operations.
 --- The fail call types for arithmetic operations could be improved
 --- in the future by considering refined number types.
-defaultCallTypes :: [(QName,[[CallType]])]
-defaultCallTypes =
+defaultCallTypes :: M.Map QName [[CallType]]
+defaultCallTypes = M.fromList $
   map (\qf -> (pre qf, failCallType))
       [ "=:=", "=:<=", "=:<<="
       , "div", "divFloat", "prim_divFloat", "divInt", "prim_divInt"
@@ -294,7 +295,7 @@ type ACallType a = Maybe [a]
 --- Since the abstract call type of an operation is a single list of abstract
 --- call types for the arguments so that a disjunction of argument lists
 --- cannot be expressed, the disjunctions are joined (i.e., intersected).
-funcCallType2AType :: TermDomain a => [(QName,ConsInfo)] -> (QName, [[CallType]])
+funcCallType2AType :: TermDomain a => M.Map QName ConsInfo -> (QName, [[CallType]])
                    -> (QName, ACallType a)
 funcCallType2AType consinfos (qn,fct) =
   (qn, if null fct
@@ -321,7 +322,7 @@ funcCallType2AType consinfos (qn,fct) =
 --- Note that this works only for abstract values which are depth-bounded,
 --- i.e., not for regular types. Thus, this operation might be better moved
 --- into the implementation of a particular abstract domain.
-normalizeAType :: TermDomain a => [(QName,ConsInfo)] -> a -> a
+normalizeAType :: TermDomain a => M.Map QName ConsInfo -> a -> a
 normalizeAType consinfos at =
   let cs   = consOfType at
       cats = map (\qc -> (qc, map (normalizeAType consinfos)

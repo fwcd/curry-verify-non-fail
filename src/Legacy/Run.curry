@@ -152,16 +152,16 @@ verifyModule valueanalysis pistore astore opts mname flatprog = do
   if optTime opts then do whenStatus opts $ printInfoString "..."
                           (id $## imps) `seq` printWhenStatus opts "done"
                   else printWhenStatus opts ""
-  let modconsinfos = consInfoOfTypeDecls (progTypes flatprog)
+  let modconsinfos = Map.toList $ consInfoOfTypeDecls (progTypes flatprog)
       consinfos = modconsinfos ++ impconsinfos
       -- verify function declarations with completed branches:
-      fdecls  = map (completeBranchesInFunc consinfos False) orgfdecls
+      fdecls  = map (completeBranchesInFunc (Map.fromList consinfos) False) orgfdecls
       funusage = funcDecls2Usage mname fdecls
   mtime <- getModuleModTime mname
   -- infer initial abstract call types:
   mboldacalltypes <- readCallTypeFile opts mtime mname
   (acalltypes, numntacalltypes, numpubacalltypes) <- id $!!  
-    inferCallTypes opts consinfos isVisible mname mtime flatprog mboldacalltypes
+    inferCallTypes opts (Map.fromList consinfos) isVisible mname mtime flatprog mboldacalltypes
   -- infer in/out types:
   iotypes <- id $!! inferIOTypes opts valueanalysis astore flatprog
   printIOTypesIfDemanded opts isShowable iotypes
@@ -235,7 +235,7 @@ verifyModule valueanalysis pistore astore opts mname flatprog = do
 --- return them together with the number of all/public non-trivial call types.
 --- The last argument are the already stored old call types, if they are
 --- up to date.
-inferCallTypes :: TermDomain a => Options -> [(QName,ConsInfo)]
+inferCallTypes :: TermDomain a => Options -> Map.Map QName ConsInfo
                -> (QName -> Bool)
                -> String -> ClockTime -> Prog -> Maybe [(QName,ACallType a)]
                -> IO ([(QName, ACallType a)], Int, Int)
@@ -668,8 +668,8 @@ aCallType2Bool consinfos vs (Just argts) =
     else fcAnds (map act2cond (zip vs argts))
  where
   act2cond (v,at) = fcAnds $
-    map (\ct -> if all isAnyType (argTypesOfCons ct (arityOfCons consinfos ct) at)
-                  then transTester consinfos ct (Var v)
+    map (\ct -> if all isAnyType (argTypesOfCons ct (arityOfCons (Map.fromList consinfos) ct) at)
+                  then transTester (Map.fromList consinfos) ct (Var v)
                   else fcFalse )
         (consOfType at)
 
@@ -840,7 +840,7 @@ addConjunct exp = do
 addSingleCase :: TermDomain a => Int -> QName -> [Int] -> VerifyStateM a ()
 addSingleCase casevar qc branchvars = do
   st <- get
-  let siblings    = siblingsOfCons (vstConsInfos st) qc
+  let siblings    = siblingsOfCons (Map.fromList (vstConsInfos st)) qc
       catchbranch = if null siblings then []
                                      else [Branch (Pattern anonCons []) fcFalse]
   put $ st { vstCondition =
@@ -1275,7 +1275,7 @@ verifyMissingBranches exp casevar (Branch (LPattern lit) _ : bs) = do
 verifyMissingBranches exp casevar (Branch (Pattern qc _) _ : bs) = do
   consinfos <- getConsInfos
   let otherqs  = map ((\p -> (patCons p, length(patArgs p))) . branchPattern) bs
-      siblings = siblingsOfCons consinfos qc
+      siblings = siblingsOfCons (Map.fromList consinfos) qc
       missingcs = siblings \\ otherqs -- constructors having no branches
   currfn <- getCurrentFuncName
   unless (null missingcs) $ do
@@ -1307,7 +1307,7 @@ verifyMissingBranches exp casevar (Branch (Pattern qc _) _ : bs) = do
   checkMissCons cs = do
     printIfVerb 4 $ "CHECKING UNREACHABILITY OF CONSTRUCTOR " ++ snd cs
     consinfos <- getConsInfos
-    let iscons = transTester consinfos cs (Var casevar)
+    let iscons = transTester (Map.fromList consinfos) cs (Var casevar)
     bcond <- getExpandedCondition
     unsat <- isUnsatisfiable (fcAnd iscons bcond)
     return $ if unsat then [] else [cs]
@@ -1471,7 +1471,7 @@ isUnsatisfiable bexp = do
         "': missing variables in unsatisfiability check!"
       consinfos <- getConsInfos
       answer <- lift $ checkUnsatisfiabilityWithSMT (vstToolOpts st)
-                         fname question (vstModules st) consinfos vtypes bexp
+                         fname question (vstModules st) (Map.fromList consinfos) vtypes bexp
       maybe (setToolError >> return False) return answer
     else return False
 
