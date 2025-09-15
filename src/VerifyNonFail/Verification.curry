@@ -11,6 +11,7 @@
 module VerifyNonFail.Verification ( nonFailVerifier ) where
 
 import Control.Monad               ( unless, when )
+import Control.Monad.IO.Class      ( liftIO )
 import Curry.Compiler.Distribution ( curryCompiler )
 import Data.Char                   ( toLower )
 import Data.IORef
@@ -27,8 +28,8 @@ import Analysis.TermDomain
 import Analysis.Values
 import Control.Monad.Trans.Class  ( lift )
 import Control.Monad.Trans.State  ( StateT, get, put, execStateT )
-import qualified Data.Map as Map
-import qualified Data.Set as Set
+import qualified Data.Map as M
+import qualified Data.Set as S
 import Data.Functor.Invariant     ( Invariant (..) )
 import Data.Time                  ( ClockTime )
 import Debug.Profile
@@ -46,7 +47,7 @@ import System.Directory           ( createDirectoryIfMissing, doesFileExist
 import System.FilePath            ( (</>) )
 import System.Path                ( fileInPath )
 import System.Process             ( exitWith )
-import Verification.Env           ( VUFuncEnv, VUProgEnv )
+import Verification.Env           ( VUFuncEnv, VUProgEnv, currentProg )
 import Verification.Run           ( runUntypedVerification )
 import Verification.Options       ( VOptions (..), defaultVOptions )
 import Verification.Monad         ( VM, throwVM )
@@ -88,17 +89,23 @@ nonFailureVerifierWith :: TermDomain a => Analysis a -> Options -> IO (UVerifica
 nonFailureVerifierWith valueanalysis opts = do
   gs <- newIORef emptyGlobalState
   return emptyVerification
-    { vPreprocess = preprocessProg
-    , vInit       = initFuncInfo
-    , vUpdate     = updateFuncInfo valueanalysis opts
+    { vPreprocess = preprocessProg gs
+    , vInit       = initFuncInfo gs
+    , vUpdate     = updateFuncInfo gs valueanalysis opts
     }
 
-preprocessProg :: TermDomain a => VUProgEnv (VerifyInfo a) -> VM VUProgUpdate
-preprocessProg env = do
+preprocessProg :: TermDomain a => IORef VerifyGlobalState -> VUProgEnv (VerifyInfo a) -> VM VUProgUpdate
+preprocessProg gs env = do
+  prog <- currentProg env
+
+  -- Compute cons infos for module
+  let modconsinfos = consInfoOfTypeDecls (progTypes prog)
+  liftIO $ modifyIORef gs $ \s -> s { vgsConsInfos = M.union (M.fromList modconsinfos) (vgsConsInfos s) }
+
   return emptyVProgUpdate
 
-initFuncInfo :: TermDomain a => VUFuncEnv (VerifyInfo a) -> VM (Maybe (VerifyInfo a))
-initFuncInfo env = do
+initFuncInfo :: TermDomain a => IORef VerifyGlobalState -> VUFuncEnv (VerifyInfo a) -> VM (Maybe (VerifyInfo a))
+initFuncInfo gs env = do
   -- consinfos <- TODO
 
   -- infer initial abstract call type:
@@ -106,15 +113,15 @@ initFuncInfo env = do
 
   return . Just $ emptyVerifyInfo
 
-updateFuncInfo :: TermDomain a => Analysis a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
-updateFuncInfo valueanalysis opts env = do
+updateFuncInfo :: TermDomain a => IORef VerifyGlobalState -> Analysis a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
+updateFuncInfo gs valueanalysis opts env = do
   return emptyVFuncUpdate -- TODO
 
 --- Global internal state that is held across the whole verification
 --- lifecycle in an IORef. Mostly used for non-failure verification-specific
 --- caching purposes.
 data VerifyGlobalState = VerifyGlobalState
-  { vgsConsInfos :: [(QName,ConsInfo)]         -- infos about all constructors
+  { vgsConsInfos :: M.Map QName ConsInfo  -- infos about all constructors
   }
 
 emptyGlobalState :: VerifyGlobalState
