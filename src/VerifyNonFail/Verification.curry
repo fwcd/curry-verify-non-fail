@@ -48,7 +48,7 @@ import System.Directory           ( createDirectoryIfMissing, doesFileExist
 import System.FilePath            ( (</>) )
 import System.Path                ( fileInPath )
 import System.Process             ( exitWith )
-import Verification.Env           ( VUFuncEnv, VUProgEnv, currentProg, currentFuncName, currentFunc, currentModule )
+import Verification.Env           ( VUFuncEnv, VUProgEnv, currentProg, currentFuncName, currentFunc, currentModule, funcInfoFromEnv )
 import Verification.Run           ( runUntypedVerification )
 import Verification.Options       ( VOptions (..), defaultVOptions )
 import Verification.Monad         ( VM, throwVM )
@@ -179,6 +179,7 @@ data VerifyState a = VerifyState
   , vstFailedFuncs     :: [(QName,Int,Expr)]         -- functions with illegal calls
   , vstPartialBranches :: [(QName,Int,Expr,[QName])] -- incomplete branches
   , vstNewFailed       :: [(QName,ACallType a)]      -- new failed function call types
+  , vstNewFunConds     :: [(QName,NonFailCond)]      -- new non-failure conditions
   , vstStats           :: (Int,Int,Int)              -- number of: non-trivial calls /
                                                      -- incomplete cases /
                                                      -- SMT-checked non-trivial calls
@@ -196,6 +197,7 @@ emptyVerifyState opts = VerifyState
   , vstFailedFuncs     = []
   , vstPartialBranches = []
   , vstNewFailed       = []
+  , vstNewFunConds     = []
   , vstStats           = (0, 0, 0)
   , vstToolOpts        = opts
   , vstError           = False
@@ -516,11 +518,7 @@ addEquVarCondition var exp = do
 
 -- Gets the possible non-fail condition of a given operation.
 getNonFailConditionOf :: TermDomain a => QName -> VerifyM a (Maybe NonFailCond)
-getNonFailConditionOf qf = do
-  st <- get
-  return $ maybe (M.lookup qf (vstImpFunConds st))
-                 Just
-                 (lookup qf (vstFunConds st))
+getNonFailConditionOf qf = viNonFailCond . flip funcInfoFromEnv qf <$> askVFuncEnv
 
 -- Gets the abstract call type of a given operation.
 -- The trivial abstract call type is returned for encapsulated search operations.
@@ -531,15 +529,11 @@ getCallType qf ar
   | otherwise
   = do
   st <- get
+  env <- askVFuncEnv
   return $
     if qf == pre "error" && optError (vstToolOpts st)
       then failACallType
-      else maybe (maybe (trace ("Warning: call type of operation " ++
-                                show qf ++ " not found!") trivialACallType)
-                        id
-                        (M.lookup qf (vstImpCallTypes st)))
-                 id
-                 (M.lookup qf (vstCallTypes st))
+      else maybe (trace ("Warning: call type of operation " ++ show qf ++ " not found!") trivialACallType) id (viCallType <$> funcInfoFromEnv env qf)
  where
   trivialACallType = Just $ take ar (repeat anyType)
 
@@ -552,11 +546,12 @@ getFuncType qf ar
   = return $ trivialInOutType ar
   | otherwise
   = do st <- get
+       env <- askVFuncEnv
        maybe (do lift $ printInfoLine $
                    "WARNING: in/out type of '" ++ show qf ++ "' not found!"
                  return $ trivialInOutType ar)
              return
-             (M.lookup qf (vstIOTypes st))
+             (viIOType <$> funcInfoFromEnv env qf)
 
 -- Increment number of checks of non-trivial function calls.
 incrNonTrivialCall :: TermDomain a => VerifyM a ()
