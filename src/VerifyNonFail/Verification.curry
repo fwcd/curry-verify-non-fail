@@ -134,7 +134,8 @@ initFuncInfo opts gs env = do
 
 updateFuncInfo :: TermDomain a => VerifyGlobals a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
 updateFuncInfo gs opts env = do
-  -- TODO
+  let state = 
+  execVerifyM
   return emptyVFuncUpdate
 
 --- Global internal state that is held across the whole verification
@@ -203,9 +204,8 @@ emptyVerifyState opts = VerifyState
   , vstError           = False
   }
 
-data VerifyEnv a = VerifyEnv
+newtype VerifyEnv a = VerifyEnv
   { veFuncEnv :: VUFuncEnv (VerifyInfo a)
-  , veGlobals :: VerifyGlobals a
   }
 
 --- The local verification monad.
@@ -218,10 +218,6 @@ execVerifyM m s e = runReaderT (execStateT m s) e
 --- Fetches the verification framework env.
 askVFuncEnv :: VerifyM a (VUFuncEnv (VerifyInfo a))
 askVFuncEnv = veFuncEnv <$> lift ask
-
---- Fetches the globals.
-askGlobals :: VerifyM a (VerifyGlobals a)
-askGlobals = veGlobals <$> lift ask
 
 -- Sets the name and arity of the current function in the state.
 setToolError :: TermDomain a => VerifyM a ()
