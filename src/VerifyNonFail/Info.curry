@@ -3,7 +3,7 @@ module VerifyNonFail.Info
   ) where
 
 import Analysis.TermDomain          ( TermDomain(..) )
-import Text.Pretty                  ( Doc, (<+>), text, vcat, align )
+import Text.Pretty                  ( Doc, (<+>), text, vcat, align, hsep, fill )
 import VerifyNonFail.CallTypes      ( ACallType, mapATypeDomain, prettyCT, prettyFunCallAType )
 import VerifyNonFail.Conditions     ( NonFailCond )
 import VerifyNonFail.IOTypes        ( InOutType, mapIOTDomain, showIOT )
@@ -40,8 +40,9 @@ mapVerifyInfoDomain f vi = VerifyInfo
 
 --- Pretty-prints the given non-failure info in human-readable format.
 ppVerifyInfo :: TermDomain a => VerifyInfo a -> Doc
-ppVerifyInfo vi = align $ vcat
-  [ text "non-fail cond: " <+> text (maybe "Nothing" show (viNonFailCond vi))
-  , text "    call type: " <+> text (maybe "Nothing" prettyFunCallAType (viCallType vi))
-  , text "     i/o type: " <+> text (maybe "Nothing" showIOT (viIOType vi))
+ppVerifyInfo vi = align $ hsep
+  [ text "nfc:" <+> fill colWidth (text (maybe "none" show (viNonFailCond vi)))
+  , text "ct:"  <+> fill colWidth (text (maybe "none" prettyFunCallAType (viCallType vi)))
+  , text "i/o:" <+> fill colWidth (text (maybe "none" showIOT (viIOType vi)))
   ]
+  where colWidth = 20
