@@ -138,6 +138,10 @@ data ProgInfo = ProgInfo
   { progInfos :: [(String,ModInfo)] -- program infos of all modules
   }
 
+instance Monoid ProgInfo where
+  mempty = ProgInfo []
+  ProgInfo pis1 `mappend` ProgInfo pis2 = ProgInfo (pis1 ++ pis2)
+
 emptyProgInfo :: ProgInfo
 emptyProgInfo = ProgInfo []
 
