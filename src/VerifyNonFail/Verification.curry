@@ -87,14 +87,14 @@ nonFailVerifier opts =
 
 nonFailureVerifierWith :: TermDomain a => Analysis a -> Options -> IO (UVerification (VerifyInfo a))
 nonFailureVerifierWith valueanalysis opts = do
-  gs <- newIORef emptyGlobalState
+  gs <- emptyGlobalState >>= newIORef
   return emptyVerification
     { vPreprocess = preprocessProg gs
-    , vInit       = initFuncInfo opts gs
+    , vInit       = initFuncInfo opts gs valueanalysis
     , vUpdate     = updateFuncInfo gs valueanalysis opts
     }
 
-preprocessProg :: TermDomain a => IORef VerifyGlobalState -> VUProgEnv (VerifyInfo a) -> VM VUProgUpdate
+preprocessProg :: TermDomain a => IORef (VerifyGlobalState a) -> VUProgEnv (VerifyInfo a) -> VM VUProgUpdate
 preprocessProg gs env = do
   prog <- currentProg env
 
@@ -110,9 +110,10 @@ preprocessProg gs env = do
 
   return emptyVProgUpdate
 
-initFuncInfo :: TermDomain a => Options -> IORef VerifyGlobalState -> VUFuncEnv (VerifyInfo a) -> VM (Maybe (VerifyInfo a))
-initFuncInfo opts gs env = do
+initFuncInfo :: TermDomain a => Options -> IORef (VerifyGlobalState a) -> Analysis a -> VUFuncEnv (VerifyInfo a) -> VM (Maybe (VerifyInfo a))
+initFuncInfo opts gs valueanalysis env = do
   let fdecl = currentFunc env
+  prog <- currentProg env
 
   (consinfos, isVisible) <- do
     s <- liftIO $ readIORef gs
@@ -120,14 +121,19 @@ initFuncInfo opts gs env = do
 
   -- infer initial abstract call type:
   (_, acalltype) <- inferCallType opts consinfos fdecl
+  -- infer initial in/out type:
+  (_, iotype) <- do
+    s <- liftIO $ readIORef gs
+    inferIOType opts valueanalysis (vgsAnalysisStore s) prog fdecl
 
   -- TODO
 
   return . Just $ emptyVerifyInfo
     { viCallType = Just acalltype
+    , viIOType   = Just iotype
     }
 
-updateFuncInfo :: TermDomain a => IORef VerifyGlobalState -> Analysis a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
+updateFuncInfo :: TermDomain a => IORef (VerifyGlobalState a) -> Analysis a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
 updateFuncInfo gs valueanalysis opts env = do
   -- TODO
   return emptyVFuncUpdate
@@ -135,16 +141,20 @@ updateFuncInfo gs valueanalysis opts env = do
 --- Global internal state that is held across the whole verification
 --- lifecycle in an IORef. Mostly used for non-failure verification-specific
 --- caching purposes.
-data VerifyGlobalState = VerifyGlobalState
-  { vgsConsInfos    :: M.Map QName ConsInfo  -- infos about all constructors
-  , vgsVisibleFuncs :: S.Set QName           -- public functions
+data VerifyGlobalState a = VerifyGlobalState
+  { vgsConsInfos     :: M.Map QName ConsInfo    -- infos about all constructors
+  , vgsVisibleFuncs  :: S.Set QName             -- public functions
+  , vgsAnalysisStore :: IORef (AnalysisStore a) -- An 
   }
 
-emptyGlobalState :: VerifyGlobalState
-emptyGlobalState = VerifyGlobalState
-  { vgsConsInfos    = M.empty
-  , vgsVisibleFuncs = S.empty
-  }
+emptyGlobalState :: IO (VerifyGlobalState a)
+emptyGlobalState = do
+  astore <- newIORef (AnaStore [])
+  return VerifyGlobalState
+    { vgsConsInfos     = M.empty
+    , vgsVisibleFuncs  = S.empty
+    , vgsAnalysisStore = astore
+    }
 
 --- Local internal state.
 data VerifyState a = VerifyState
@@ -170,5 +180,12 @@ data VerifyState a = VerifyState
 --- up to date.
 inferCallType :: TermDomain a => Options -> M.Map QName ConsInfo -> FuncDecl -> VM (QName, ACallType a)
 inferCallType opts consinfos fdecl = return $ funcCallType2AType consinfos $ callTypeFunc opts consinfos fdecl
+
+--- Infer the in/out types of a function in a program and return them
+--- together with the number of all and public non-trivial in/out types.
+inferIOType :: TermDomain a => Options -> Analysis a -> IORef (AnalysisStore a) -> Prog -> FuncDecl -> VM (QName, InOutType a)
+inferIOType opts valueanalysis astore flatprog fdecl = do
+  rvmap <- liftIO $ loadAnalysisWithImports astore valueanalysis opts flatprog
+  return $ inOutATypeFunc rvmap fdecl
 
 ------------------------------------------------------------------------------
