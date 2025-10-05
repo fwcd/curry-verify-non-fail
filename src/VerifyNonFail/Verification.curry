@@ -87,14 +87,14 @@ nonFailVerifier opts =
 
 nonFailureVerifierWith :: TermDomain a => Analysis a -> Options -> IO (UVerification (VerifyInfo a))
 nonFailureVerifierWith valueanalysis opts = do
-  gs <- emptyGlobalState >>= newIORef
+  gs <- emptyGlobalState valueanalysis
   return emptyVerification
     { vPreprocess = preprocessProg gs
-    , vInit       = initFuncInfo opts gs valueanalysis
-    , vUpdate     = updateFuncInfo gs valueanalysis opts
+    , vInit       = initFuncInfo opts gs
+    , vUpdate     = updateFuncInfo gs opts
     }
 
-preprocessProg :: TermDomain a => IORef (VerifyGlobalState a) -> VUProgEnv (VerifyInfo a) -> VM VUProgUpdate
+preprocessProg :: TermDomain a => VerifyGlobals a -> VUProgEnv (VerifyInfo a) -> VM VUProgUpdate
 preprocessProg gs env = do
   prog <- currentProg env
 
@@ -103,28 +103,26 @@ preprocessProg gs env = do
       orgfdecls    = progFuncs prog
       visfuncs     = map funcName (filter ((== Public) . funcVisibility) orgfdecls)
 
-  liftIO $ modifyIORef gs $ \s -> s
-    { vgsConsInfos    = M.union modconsinfos (vgsConsInfos s)
-    , vgsVisibleFuncs = S.union (S.fromList visfuncs) (vgsVisibleFuncs s)
-    }
+  liftIO $ do
+    modifyIORef (vgsConsInfos gs) $ M.union modconsinfos
+    modifyIORef (vgsVisibleFuncs gs) $ S.union (S.fromList visfuncs)
 
   return emptyVProgUpdate
 
-initFuncInfo :: TermDomain a => Options -> IORef (VerifyGlobalState a) -> Analysis a -> VUFuncEnv (VerifyInfo a) -> VM (Maybe (VerifyInfo a))
-initFuncInfo opts gs valueanalysis env = do
+initFuncInfo :: TermDomain a => Options -> VerifyGlobals a -> VUFuncEnv (VerifyInfo a) -> VM (Maybe (VerifyInfo a))
+initFuncInfo opts gs env = do
   let fdecl = currentFunc env
   prog <- currentProg env
 
-  (consinfos, isVisible) <- do
-    s <- liftIO $ readIORef gs
-    return (vgsConsInfos s, flip S.member (vgsVisibleFuncs s))
+  (consinfos, isVisible) <- liftIO $ do
+    cis <- readIORef $ vgsConsInfos gs
+    vfs <- readIORef $ vgsVisibleFuncs gs
+    return (cis, flip S.member vfs)
 
   -- infer initial abstract call type:
   (_, acalltype) <- inferCallType opts consinfos fdecl
   -- infer initial in/out type:
-  (_, iotype) <- do
-    s <- liftIO $ readIORef gs
-    inferIOType opts valueanalysis (vgsAnalysisStore s) prog fdecl
+  (_, iotype) <- inferIOType opts (vgsValueAnalyis gs) (vgsAnalysisStore gs) prog fdecl
 
   -- TODO
 
@@ -133,28 +131,27 @@ initFuncInfo opts gs valueanalysis env = do
     , viIOType   = Just iotype
     }
 
-updateFuncInfo :: TermDomain a => IORef (VerifyGlobalState a) -> Analysis a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
-updateFuncInfo gs valueanalysis opts env = do
+updateFuncInfo :: TermDomain a => VerifyGlobals a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
+updateFuncInfo gs opts env = do
   -- TODO
   return emptyVFuncUpdate
 
 --- Global internal state that is held across the whole verification
 --- lifecycle in an IORef. Mostly used for non-failure verification-specific
 --- caching purposes.
-data VerifyGlobalState a = VerifyGlobalState
-  { vgsConsInfos     :: M.Map QName ConsInfo    -- infos about all constructors
-  , vgsVisibleFuncs  :: S.Set QName             -- public functions
-  , vgsAnalysisStore :: IORef (AnalysisStore a) -- An 
+data VerifyGlobals a = VerifyGlobals
+  { vgsConsInfos     :: IORef (M.Map QName ConsInfo) -- infos about all constructors
+  , vgsVisibleFuncs  :: IORef (S.Set QName)          -- public functions
+  , vgsAnalysisStore :: IORef (AnalysisStore a)      -- CASS analysis infos
+  , vgsValueAnalyis  :: Analysis a                   -- CASS value analysis
   }
 
-emptyGlobalState :: IO (VerifyGlobalState a)
-emptyGlobalState = do
-  astore <- newIORef (AnaStore [])
-  return VerifyGlobalState
-    { vgsConsInfos     = M.empty
-    , vgsVisibleFuncs  = S.empty
-    , vgsAnalysisStore = astore
-    }
+emptyGlobalState :: Analysis a -> IO (VerifyGlobals a)
+emptyGlobalState valueanalysis = VerifyGlobals
+                             <$> newIORef M.empty
+                             <*> newIORef S.empty
+                             <*> newIORef (AnaStore [])
+                             <*> pure valueanalysis
 
 --- Local internal state.
 data VerifyState a = VerifyState
