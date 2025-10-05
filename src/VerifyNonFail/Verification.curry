@@ -48,7 +48,7 @@ import System.Directory           ( createDirectoryIfMissing, doesFileExist
 import System.FilePath            ( (</>) )
 import System.Path                ( fileInPath )
 import System.Process             ( exitWith )
-import Verification.Env           ( VUFuncEnv, VUProgEnv, currentProg, currentFuncName, currentFunc, currentModule, funcInfoFromEnv )
+import Verification.Env           ( VUFuncEnv, VUProgEnv, currentProg, currentFuncName, currentFunc, currentModule, funcInfoFromEnv, progsFromEnv )
 import Verification.Run           ( runUntypedVerification )
 import Verification.Options       ( VOptions (..), defaultVOptions )
 import Verification.Monad         ( VM, throwVM )
@@ -252,6 +252,17 @@ newFreshVarIndex = do
   v <- fmap vstFreshVar get
   setFreshVarIndex (v + 1)
   return v
+
+-- Runs a function that takes an `IORef ProgInfo` and runs it in the verification environment.
+-- This is used to adapt legacy code and should ideally be refactored since it's less efficient
+-- than operating on the verification environment directly.
+withLegacyProgInfo :: (IORef ProgInfo -> VerifyM a b) -> VerifyM a b
+withLegacyProgInfo f = do
+  env <- askVFuncEnv
+  let pi = ProgInfo $ (\p -> (progName p, prog2ModInfo p)) <$> progsFromEnv env
+  pistore <- liftIO $ newIORef pi
+  f pistore
+  -- FIXME: Handle changes
 
 -- Adds a new (more restricted) inferred call type for a function
 -- which will be used in the next iteration. If there is already
@@ -1125,12 +1136,13 @@ isUnsatisfiable bexp = do
       let vtypes   = filter ((`elem` allvs) . fst) vts
           question = "Verifying function " ++ snd fname ++ ":\n\n" ++
                      "IS\n  " ++ showSimpExp bexp ++ "\nUNSATISFIABLE?"
-      unless (all (`elem` map fst vtypes) allvs) $ lift $ printInfoLine $
+      unless (all (`elem` map fst vtypes) allvs) $ liftIO $ printInfoLine $
         "WARNING in operation '" ++ snd fname ++
         "': missing variables in unsatisfiability check!"
       consinfos <- getConsInfos
-      answer <- lift $ checkUnsatisfiabilityWithSMT (vstToolOpts st)
-                         fname question (vstModules st) (M.fromList consinfos) vtypes bexp
+      answer <- withLegacyProgInfo $ \pistore -> do
+        liftIO $ checkUnsatisfiabilityWithSMT (vstToolOpts st)
+                         fname question pistore (M.fromList consinfos) vtypes bexp
       maybe (setToolError >> return False) return answer
     else return False
 
