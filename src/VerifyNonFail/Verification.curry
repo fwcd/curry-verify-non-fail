@@ -563,8 +563,7 @@ getFuncType qf ar
   | isEncSearchOp qf || isSetFunOp qf
   = return $ trivialInOutType ar
   | otherwise
-  = do st <- get
-       env <- askVFuncEnv
+  = do env <- askVFuncEnv
        maybe (do liftIO $ printInfoLine $
                    "WARNING: in/out type of '" ++ show qf ++ "' not found!"
                  return $ trivialInOutType ar)
@@ -602,7 +601,7 @@ printIfVerb v s = do
 
 -- Verify a FlatCurry function declaration.
 verifyFunc :: TermDomain a => FuncDecl -> VerifyM a ()
-verifyFunc (Func qf ar _ ftype rule) = case rule of
+verifyFunc (Func qf _ _ ftype rule) = case rule of
   Rule vs exp -> unless noVerify $ do
                    verifyFuncRule vs ftype (normalizeLet exp)
   External _  -> return ()
