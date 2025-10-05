@@ -2,10 +2,11 @@ module VerifyNonFail.Info
   ( VerifyInfo (..), emptyVerifyInfo, mapVerifyInfoDomain, ppVerifyInfo
   ) where
 
-import Text.Pretty                  ( Doc, text )
-import VerifyNonFail.CallTypes      ( ACallType, mapATypeDomain )
+import Analysis.TermDomain          ( TermDomain(..) )
+import Text.Pretty                  ( Doc, (<+>), text, vcat, align )
+import VerifyNonFail.CallTypes      ( ACallType, mapATypeDomain, prettyCT, prettyFunCallAType )
 import VerifyNonFail.Conditions     ( NonFailCond )
-import VerifyNonFail.IOTypes        ( InOutType, mapIOTDomain )
+import VerifyNonFail.IOTypes        ( InOutType, mapIOTDomain, showIOT )
 import VerifyNonFail.ProgInfo       ( ConsInfo )
 import Verification.FlatCurry.Types ( QName )
 
@@ -37,6 +38,10 @@ mapVerifyInfoDomain f vi = VerifyInfo
   , viIOType      = mapIOTDomain f <$> viIOType vi
   }
 
---- Pretty-prints the given non-failure info.
-ppVerifyInfo :: Show a => VerifyInfo a -> Doc
-ppVerifyInfo = text . show -- TODO: Better implementation
+--- Pretty-prints the given non-failure info in human-readable format.
+ppVerifyInfo :: TermDomain a => VerifyInfo a -> Doc
+ppVerifyInfo vi = align $ vcat
+  [ text "non-fail cond: " <+> text (maybe "Nothing" show (viNonFailCond vi))
+  , text "    call type: " <+> text (maybe "Nothing" prettyFunCallAType (viCallType vi))
+  , text "     i/o type: " <+> text (maybe "Nothing" showIOT (viIOType vi))
+  ]
