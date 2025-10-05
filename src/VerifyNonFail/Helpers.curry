@@ -212,6 +212,65 @@ trd3 (_,_,z) = z
 data AnyDomain = TopDomain AType | D2Domain DType2 | D5Domain DType5
   deriving (Read, Show, Eq)
 
+instance ReadWrite AnyDomain where
+  readRW _ _ = error "readRW is not implemented for AnyDomain"
+
+  showRW ps tr (TopDomain t) = showRW ps tr t
+  showRW ps tr (D2Domain  t) = showRW ps tr t
+  showRW ps tr (D5Domain  t) = showRW ps tr t
+
+  typeOf (TopDomain t) = typeOf t
+  typeOf (D2Domain  t) = typeOf t
+  typeOf (D5Domain  t) = typeOf t
+
+  writeRW ps h (TopDomain t) tr = writeRW ps h t tr
+  writeRW ps h (D2Domain  t) tr = writeRW ps h t tr
+  writeRW ps h (D5Domain  t) tr = writeRW ps h t tr
+
+instance TermDomain AnyDomain where
+  emptyType = TopDomain emptyType
+
+  isEmptyType (TopDomain t) = isEmptyType t
+  isEmptyType (D2Domain  t) = isEmptyType t
+  isEmptyType (D5Domain  t) = isEmptyType t
+
+  anyType = TopDomain anyType
+
+  isAnyType (TopDomain t) = isAnyType t
+  isAnyType (D2Domain  t) = isAnyType t
+  isAnyType (D5Domain  t) = isAnyType t
+
+  aCons qn [] = TopDomain (aCons qn [])
+  aCons qn as@(TopDomain _:_) = TopDomain (aCons qn (fromTopDomain <$> as))
+  aCons qn as@(D2Domain  _:_) = D2Domain  (aCons qn (fromD2Domain  <$> as))
+  aCons qn as@(D5Domain  _:_) = D5Domain  (aCons qn (fromD5Domain  <$> as))
+
+  aLit l = TopDomain (aLit l)
+
+  consOfType (TopDomain t) = consOfType t
+  consOfType (D2Domain  t) = consOfType t
+  consOfType (D5Domain  t) = consOfType t
+
+  argTypesOfCons qn n (TopDomain t) = TopDomain <$> argTypesOfCons qn n t
+  argTypesOfCons qn n (D2Domain  t) = D2Domain  <$> argTypesOfCons qn n t
+  argTypesOfCons qn n (D5Domain  t) = D5Domain  <$> argTypesOfCons qn n t
+
+  lubType t1 t2 = case (t1, t2) of
+    (TopDomain t, TopDomain t') -> TopDomain (lubType t t')
+    (D2Domain  t, D2Domain  t') -> D2Domain  (lubType t t')
+    (D5Domain  t, D5Domain  t') -> D5Domain  (lubType t t')
+    _                           -> error $ "lubType: Got different domains"
+  
+  joinType t1 t2 = case (t1, t2) of
+    (TopDomain t, TopDomain t') -> TopDomain (joinType t t')
+    (D2Domain  t, D2Domain  t') -> D2Domain  (joinType t t')
+    (D5Domain  t, D5Domain  t') -> D5Domain  (joinType t t')
+    _                           -> error $ "joinType: Got different domains"
+  
+  showType (TopDomain t) = showType t
+  showType (D2Domain  t) = showType t
+  showType (D5Domain  t) = showType t
+
 fromTopDomain :: AnyDomain -> AType
 fromTopDomain d = case d of
   TopDomain at -> at
