@@ -534,7 +534,7 @@ addEquVarCondition var exp = do
 
 -- Gets the possible non-fail condition of a given operation.
 getNonFailConditionOf :: TermDomain a => QName -> VerifyM a (Maybe NonFailCond)
-getNonFailConditionOf qf = viNonFailCond . flip funcInfoFromEnv qf <$> askVFuncEnv
+getNonFailConditionOf qf = (>>= viNonFailCond) . flip funcInfoFromEnv qf <$> askVFuncEnv
 
 -- Gets the abstract call type of a given operation.
 -- The trivial abstract call type is returned for encapsulated search operations.
@@ -549,7 +549,7 @@ getCallType qf ar
   return $
     if qf == pre "error" && optError (vstToolOpts st)
       then failACallType
-      else maybe (trace ("Warning: call type of operation " ++ show qf ++ " not found!") trivialACallType) id (viCallType <$> funcInfoFromEnv env qf)
+      else maybe (trace ("Warning: call type of operation " ++ show qf ++ " not found!") trivialACallType) id (funcInfoFromEnv env qf >>= viCallType)
  where
   trivialACallType = Just $ take ar (repeat anyType)
 
@@ -563,11 +563,11 @@ getFuncType qf ar
   | otherwise
   = do st <- get
        env <- askVFuncEnv
-       maybe (do lift $ printInfoLine $
+       maybe (do liftIO $ printInfoLine $
                    "WARNING: in/out type of '" ++ show qf ++ "' not found!"
                  return $ trivialInOutType ar)
              return
-             (viIOType <$> funcInfoFromEnv env qf)
+             (funcInfoFromEnv env qf >>= viIOType)
 
 -- Increment number of checks of non-trivial function calls.
 incrNonTrivialCall :: TermDomain a => VerifyM a ()
@@ -596,7 +596,7 @@ getToolOptions = get >>= return . vstToolOpts
 printIfVerb :: TermDomain a => Int -> String -> VerifyM a ()
 printIfVerb v s = do
   opts <- getToolOptions
-  when (optVerb opts >= v) $ lift $ printInfoString s
+  when (optVerb opts >= v) $ liftIO $ printInfoString s
 
 -- Verify a FlatCurry function declaration.
 verifyFunc :: TermDomain a => FuncDecl -> VerifyM a ()
@@ -663,16 +663,16 @@ showVarExpTypes = do
   opts <- getToolOptions
   when (optVerb opts > 3) $ do
     st <- get
-    lift $ printInfoString $
+    liftIO $ printInfoString $
       "Current set of variables in function " ++ snd qf ++
       ":\nVariable bindings:\n" ++
       unlines (map (\ (v,te,e) -> showBindExp v e ++
                      if te == unknownType then "" else " :: " ++ showTypeExp te)
                    (vstVarExp st))
     vartypes <- getVarTypes
-    lift $ printInfoString $ "Variable types\n" ++ showVarTypes vartypes
+    liftIO $ printInfoString $ "Variable types\n" ++ showVarTypes vartypes
     cond <- getExpandedCondition
-    lift $ printInfoLine $ "Current condition: " ++ showSimpExp cond
+    liftIO $ printInfoLine $ "Current condition: " ++ showSimpExp cond
 
 -- Verify an expression (if the first argument is `True`) and,
 -- if the expression is not a variable, create a fresh
