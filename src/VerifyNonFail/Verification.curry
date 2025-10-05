@@ -267,7 +267,7 @@ withLegacyProgInfo f = do
   let pi = ProgInfo $ (\p -> (progName p, prog2ModInfo p)) <$> progsFromEnv env
   pistore <- liftIO $ newIORef pi
   f pistore
-  -- FIXME: Handle changes
+  -- TODO: Should we handle changes?
 
 -- Adds a new (more restricted) inferred call type for a function
 -- which will be used in the next iteration. If there is already
