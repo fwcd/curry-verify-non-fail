@@ -28,6 +28,7 @@ import Analysis.TermDomain
 import Analysis.Values
 import Control.Monad.Trans.Class  ( lift )
 import Control.Monad.Trans.State  ( StateT, get, put, execStateT )
+import Control.Monad.Trans.Reader ( ReaderT, ask, runReaderT )
 import qualified Data.Map as M
 import qualified Data.Set as S
 import Data.Functor.Invariant     ( Invariant (..) )
@@ -47,7 +48,7 @@ import System.Directory           ( createDirectoryIfMissing, doesFileExist
 import System.FilePath            ( (</>) )
 import System.Path                ( fileInPath )
 import System.Process             ( exitWith )
-import Verification.Env           ( VUFuncEnv, VUProgEnv, currentProg, currentFuncName, currentFunc )
+import Verification.Env           ( VUFuncEnv, VUProgEnv, currentProg, currentFuncName, currentFunc, currentModule )
 import Verification.Run           ( runUntypedVerification )
 import Verification.Options       ( VOptions (..), defaultVOptions )
 import Verification.Monad         ( VM, throwVM )
@@ -200,11 +201,20 @@ emptyVerifyState opts = VerifyState
   , vstError           = False
   }
 
---- The local verification monad.
-type VerifyM a = StateT (VerifyState a) VM
+newtype VerifyEnv a = VerifyEnv
+  { veFuncEnv :: VUFuncEnv (VerifyInfo a)
+  }
 
-execVerifyM :: VerifyM a _ -> VerifyState a -> VM (VerifyState a)
-execVerifyM = execStateT
+--- The local verification monad.
+type VerifyM a = StateT (VerifyState a) (ReaderT (VerifyEnv a) VM)
+
+--- Executes the local verification monad.
+execVerifyM :: VerifyM a _ -> VerifyState a -> VerifyEnv a -> VM (VerifyState a)
+execVerifyM m s e = runReaderT (execStateT m s) e
+
+--- Fetches the verification framework env.
+askVFuncEnv :: VerifyM a (VUFuncEnv (VerifyInfo a))
+askVFuncEnv = lift ask
 
 -- Sets the name and arity of the current function in the state.
 setToolError :: TermDomain a => VerifyM a ()
@@ -215,8 +225,9 @@ setToolError = do
 -- Gets the function declarations of the current module.
 currentFuncDecls :: TermDomain a => VerifyState a -> IO [FuncDecl]
 currentFuncDecls st = do
-   prog <- getFlatProgFor (vstModules st) (vstCurrModule st)
-   return $ progFuncs prog
+  m <- currentModule <$> askVFuncEnv
+  prog <- getFlatProgFor (vstModules st) m
+  return $ progFuncs prog
 
 -- Sets the name and arity of the current function in the state.
 setCurrentFunc :: TermDomain a => QName -> Int -> [Int] -> VerifyM a ()
