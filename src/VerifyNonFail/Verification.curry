@@ -586,7 +586,6 @@ printIfVerb v s = do
 verifyFunc :: TermDomain a => FuncDecl -> VerifyM a ()
 verifyFunc (Func qf ar _ ftype rule) = case rule of
   Rule vs exp -> unless noVerify $ do
-                   setCurrentFunc qf ar vs
                    verifyFuncRule vs ftype (normalizeLet exp)
   External _  -> return ()
  where
