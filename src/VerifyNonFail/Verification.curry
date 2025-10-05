@@ -230,12 +230,12 @@ setToolError = do
   put $ st { vstError = True }
 
 -- Gets the current function, arity and args.
-getCurrentFunc :: TermDomain a => VerifyM a (FuncDecl, Int, [Int])
+getCurrentFunc :: TermDomain a => VerifyM a (QName, Int, [Int])
 getCurrentFunc = do
-  fdecl@(Func _ ar _ _ rule) <- currentFunc <$> askVFuncEnv
+  Func qf ar _ _ rule <- currentFunc <$> askVFuncEnv
   case rule of
-    Rule vs _  -> return (fdecl, ar, vs)
-    External _ -> return (fdecl, 0, [])
+    Rule vs _  -> return (qf, ar, vs)
+    External _ -> return (qf, 0, [])
 
 -- Gets the name of the current function in the state.
 getCurrentFuncName :: TermDomain a => VerifyM a QName
