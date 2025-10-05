@@ -222,24 +222,17 @@ setToolError = do
   st <- get
   put $ st { vstError = True }
 
--- Gets the function declarations of the current module.
-currentFuncDecls :: TermDomain a => VerifyState a -> IO [FuncDecl]
-currentFuncDecls st = do
-  m <- currentModule <$> askVFuncEnv
-  prog <- getFlatProgFor (vstModules st) m
-  return $ progFuncs prog
-
--- Sets the name and arity of the current function in the state.
-setCurrentFunc :: TermDomain a => QName -> Int -> [Int] -> VerifyM a ()
-setCurrentFunc qf ar vs = do
-  st <- get
-  put $ st { vstCurrFunc = (qf,ar,vs) }
+-- Gets the current function, arity and args.
+getCurrentFunc :: TermDomain a => VerifyM a (FuncDecl, Int, [Int])
+getCurrentFunc = do
+  fdecl@(Func _ ar _ _ rule) <- currentFunc <$> askVFuncEnv
+  case rule of
+    Rule vs _  -> return (fdecl, ar, vs)
+    External _ -> return (fdecl, 0, [])
 
 -- Gets the name of the current function in the state.
 getCurrentFuncName :: TermDomain a => VerifyM a QName
-getCurrentFuncName = do
-  st <- get
-  return $ let (qf,_,_) = vstCurrFunc st in qf
+getCurrentFuncName = currentFuncName <$> askVFuncEnv
 
 -- Gets information about all constructors.
 getConsInfos :: TermDomain a => VerifyM a [(QName,ConsInfo)]
@@ -284,7 +277,7 @@ addConditionRestriction :: TermDomain a => QName -> Expr -> VerifyM a ()
 addConditionRestriction qf cond = do
   st <- get
   when (optSMT (vstToolOpts st)) $ do
-    let (_,_,vs) = vstCurrFunc st
+    let (_,_,vs) = getCurrentFunc st
     oldcalltype <- getCallType qf 0
     let totaloldct = isTotalACallType oldcalltype
         -- express oldcalltype as a condition to be added to `cond`:
@@ -347,7 +340,7 @@ aCallType2Bool consinfos vs (Just argts) =
 addFailedFunc :: TermDomain a => Expr -> Maybe [(Int,a)] -> Expr -> VerifyM a ()
 addFailedFunc exp mbvts cond = do
   st <- get
-  let (qf,ar,args) = vstCurrFunc st
+  let (qf,ar,args) = getCurrentFunc st
   put $ st { vstFailedFuncs = union [(qf,ar,exp)] (vstFailedFuncs st) }
   maybe (addConditionRestriction qf cond)
         (\vts ->
@@ -377,7 +370,7 @@ addFailedFunc exp mbvts cond = do
 addMissingCase :: TermDomain a => Expr -> [QName] -> VerifyM a ()
 addMissingCase exp qcs = do
   st <- get
-  let (qf,ar,_) = vstCurrFunc st
+  let (qf,ar,_) = getCurrentFunc st
   put $
     st { vstPartialBranches = union [(qf,ar,exp,qcs)] (vstPartialBranches st) }
   addCallTypeRestriction qf failACallType
