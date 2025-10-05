@@ -164,7 +164,7 @@ data VerifyState a = VerifyState
   , vstError           :: Bool
   }
 
---- Infer the initial (abstract) call types of all functions in a program and
+--- Infer the initial (abstract) call types of a function in a program and
 --- return them together with the number of all/public non-trivial call types.
 --- The last argument are the already stored old call types, if they are
 --- up to date.
