@@ -216,7 +216,7 @@ execVerifyM m s e = runReaderT (execStateT m s) e
 
 --- Fetches the verification framework env.
 askVFuncEnv :: VerifyM a (VUFuncEnv (VerifyInfo a))
-askVFuncEnv = lift ask
+askVFuncEnv = veFuncEnv <$> lift ask
 
 -- Sets the name and arity of the current function in the state.
 setToolError :: TermDomain a => VerifyM a ()
