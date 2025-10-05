@@ -87,7 +87,7 @@ nonFailVerifier opts =
 
 nonFailureVerifierWith :: TermDomain a => Analysis a -> Options -> IO (UVerification (VerifyInfo a))
 nonFailureVerifierWith valueanalysis opts = do
-  gs <- emptyGlobalState valueanalysis
+  gs <- emptyGlobals valueanalysis
   return emptyVerification
     { vPreprocess = preprocessProg gs
     , vInit       = initFuncInfo opts gs
@@ -146,8 +146,8 @@ data VerifyGlobals a = VerifyGlobals
   , vgsValueAnalyis  :: Analysis a                   -- CASS value analysis
   }
 
-emptyGlobalState :: Analysis a -> IO (VerifyGlobals a)
-emptyGlobalState valueanalysis = VerifyGlobals
+emptyGlobals :: Analysis a -> IO (VerifyGlobals a)
+emptyGlobals valueanalysis = VerifyGlobals
                              <$> newIORef M.empty
                              <*> newIORef S.empty
                              <*> newIORef (AnaStore [])
