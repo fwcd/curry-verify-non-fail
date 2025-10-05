@@ -282,6 +282,8 @@ addCallTypeRestriction qf ctype = do
                                              [(qf,newct)] (vstNewFailed st) })
         (lookup qf (vstNewFailed st))
 
+-- TODO: Migrate logging to verification framework
+
 -- Adds a new condition (provided as the second argument as a FlatCurry
 -- expression) to the call condition for the current function (first argument)
 -- so that it will be used in the next iteration.
@@ -1145,6 +1147,9 @@ isUnsatisfiable bexp = do
         "WARNING in operation '" ++ snd fname ++
         "': missing variables in unsatisfiability check!"
       consinfos <- getConsInfos
+      -- TODO: Port SMT handling directly to the verification framework
+      -- (we'd have to figure out a way to keep the legacy implementation intact
+      -- or just drop the legacy flag entirely)
       answer <- withLegacyProgInfo $ \pistore -> do
         liftIO $ checkUnsatisfiabilityWithSMT (vstToolOpts st)
                          fname question pistore (M.fromList consinfos) vtypes bexp
