@@ -290,7 +290,7 @@ addConditionRestriction :: TermDomain a => QName -> Expr -> VerifyM a ()
 addConditionRestriction qf cond = do
   st <- get
   when (optSMT (vstToolOpts st)) $ do
-    let (_,_,vs) = getCurrentFunc st
+    (_,_,vs) <- getCurrentFunc
     oldcalltype <- getCallType qf 0
     let totaloldct = isTotalACallType oldcalltype
         -- express oldcalltype as a condition to be added to `cond`:
@@ -353,7 +353,7 @@ aCallType2Bool consinfos vs (Just argts) =
 addFailedFunc :: TermDomain a => Expr -> Maybe [(Int,a)] -> Expr -> VerifyM a ()
 addFailedFunc exp mbvts cond = do
   st <- get
-  let (qf,ar,args) = getCurrentFunc st
+  (qf,ar,args) <- getCurrentFunc
   put $ st { vstFailedFuncs = union [(qf,ar,exp)] (vstFailedFuncs st) }
   maybe (addConditionRestriction qf cond)
         (\vts ->
@@ -383,7 +383,7 @@ addFailedFunc exp mbvts cond = do
 addMissingCase :: TermDomain a => Expr -> [QName] -> VerifyM a ()
 addMissingCase exp qcs = do
   st <- get
-  let (qf,ar,_) = getCurrentFunc st
+  (qf,ar,_) <- getCurrentFunc
   put $
     st { vstPartialBranches = union [(qf,ar,exp,qcs)] (vstPartialBranches st) }
   addCallTypeRestriction qf failACallType
