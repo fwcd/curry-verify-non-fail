@@ -16,7 +16,7 @@ import Curry.Compiler.Distribution ( curryCompiler )
 import Data.Char                   ( toLower )
 import Data.IORef
 import Data.List
-import Data.Maybe                  ( isNothing )
+import Data.Maybe                  ( isNothing, mapMaybe )
 import System.Environment          ( getArgs )
 import Text.Pretty                 ( pPrint )
 
@@ -49,6 +49,7 @@ import System.FilePath            ( (</>) )
 import System.Path                ( fileInPath )
 import System.Process             ( exitWith )
 import Verification.Env           ( VUFuncEnv, VUProgEnv, currentProg, currentFuncName, currentFunc, currentModule, funcInfoFromEnv, progsFromEnv )
+import Verification.Info          ( VProgInfo (..) )
 import Verification.Run           ( runUntypedVerification )
 import Verification.Options       ( VOptions (..), defaultVOptions )
 import Verification.Monad         ( VM, throwVM )
@@ -135,10 +136,30 @@ initFuncInfo opts gs env = do
 updateFuncInfo :: TermDomain a => VerifyGlobals a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
 updateFuncInfo gs opts env = do
   -- TODO: In the legacy implementation the state would be initialized only once for the whole program, not per iteration.
-  let state = emptyVerifyState opts
-      fdecl = currentFunc env
-  state' <- execVerifyM (verifyFunc fdecl) state (VerifyEnv env)
+  let initialst = emptyVerifyState opts
+      fdecl     = currentFunc env
+
+  st <- execVerifyM (verifyFunc fdecl) initialst (VerifyEnv env)
+
+  -- TODO: Do we need to do it this way?
+  -- let newfailures = filter (\(qf,ct) -> maybe True (\fct -> ct /= fct)
+  --                                         (funcInfoFromEnv env qf >>= viCallType))
+  --                          (vstNewFailed st)
+  let newfailures = vstNewFailed st
+      newfunconds = vstNewFunConds st
+
+  unless (null newfailures) $ liftIO $ printWhenStatus opts $ unlines $
+    "Operations with refined call types (used in future analyses):" :
+    showFunResults prettyFunCallAType (reverse newfailures)
+
+  -- TODO: Port newfunconds/newrefineconds logic of setting existing conds to `False` to avoid infinite refinement?
+  let newctinfos   = M.fromList $ mapMaybe (\(qf, ct)   -> (\vi -> (qf, vi { viCallType    = Just ct   })) <$> funcInfoFromEnv env qf) newfailures
+      newcondinfos = M.fromList $ mapMaybe (\(qf, cond) -> (\vi -> (qf, vi { viNonFailCond = Just cond })) <$> funcInfoFromEnv env qf) newfunconds
+      newinfos     = M.unionWith mappend newctinfos newcondinfos
+
   return emptyVFuncUpdate
+    { vfuOtherInfos = VProgInfo newinfos
+    }
 
 --- Global internal state that is held across the whole verification
 --- lifecycle in an IORef. Mostly used for non-failure verification-specific
