@@ -93,7 +93,10 @@ nonFailureVerifierWith valueanalysis opts = do
   return emptyVerification
     { vPreprocess = preprocessProg gs
     , vInit       = initFuncInfo opts gs
-    , vUpdate     = updateFuncInfo gs opts
+    , vUpdate     =
+        if optSkipUpdate opts
+          then const . return $ emptyVFuncUpdate
+          else updateFuncInfo gs opts
     }
 
 preprocessProg :: TermDomain a => VerifyGlobals a -> VUProgEnv (VerifyInfo a) -> VM VUProgUpdate

@@ -56,6 +56,7 @@ data Options = Options
   , optStats       :: Bool -- show and store statitics?
   , optTime        :: Bool -- show elapsed verification time?
   , optDomainID    :: String -- the unique id for the abstract term domain
+  , optSkipUpdate  :: Bool -- skip the fixed-point iteration phase (for debugging)
   , optLegacy      :: Bool -- use the legacy, non-framework implementation
   }
 
@@ -63,7 +64,7 @@ data Options = Options
 defaultOptions :: Options
 defaultOptions =
   Options 1 False "" True False False FormatText False True True False False
-          True True False False False False False False "" False
+          True True False False False False False False "" False False
 
 --- Process the actual command line argument and return the options
 --- and the name of the main program.
@@ -137,6 +138,9 @@ options =
   , Option "r" ["rerun"]
            (NoArg (\opts -> opts { optRerun = True }))
            "rerun verification of current module\n(ignore results of previous verification)"
+  , Option "k" ["skip-update"]
+           (NoArg (\opts -> opts { optSkipUpdate = True }))
+           "skips the fixed-point iteration (for debugging)"
   , Option "s" ["statistics"]
            (NoArg (\opts -> opts { optStats = True }))
            "show/store statistics (functions, failures,...)"
