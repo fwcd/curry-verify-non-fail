@@ -138,9 +138,13 @@ initFuncInfo opts gs env = do
 
 updateFuncInfo :: TermDomain a => VerifyGlobals a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
 updateFuncInfo gs opts env = do
+  consinfos <- liftIO . readIORef $ vgsConsInfos gs
+
   -- TODO: In the legacy implementation the state would be initialized only once for the whole program, not per iteration.
-  let initialst = emptyVerifyState opts
-      fdecl     = currentFunc env
+  let fdecl     = currentFunc env
+      initialst = (emptyVerifyState opts)
+        { vstConsInfos = M.toList consinfos
+        }
 
   st <- execVerifyM (verifyFunc fdecl) initialst (VerifyEnv env)
 
@@ -197,7 +201,7 @@ inferIOType opts valueanalysis astore flatprog fdecl = do
 
 --- Local internal state.
 data VerifyState a = VerifyState
-  { vstConsInfos       :: [(QName,ConsInfo)]         -- infos about all constructors
+  { vstConsInfos       :: [(QName,ConsInfo)]         -- infos about all constructors -- TODO: Move vstConsInfos (and other read-only state) into VerifyEnv
   , vstFreshVar        :: Int                        -- fresh variable index in a rule
   , vstVarExp          :: [(Int,TypeExpr,Expr)]      -- map variable to its type and
                                                      -- subexpression
