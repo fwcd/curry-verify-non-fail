@@ -138,7 +138,10 @@ updateFuncInfo :: TermDomain a => VerifyGlobals a -> Options -> VUFuncEnv (Verif
 updateFuncInfo gs opts env = do
   consinfos <- liftIO . readIORef $ vgsConsInfos gs
 
-  -- TODO: In the legacy implementation the state would be initialized only once for the whole program, not per iteration.
+  -- In the legacy implementation the state would be initialized only once for the whole program, not per iteration,
+  -- so we need to be a bit careful here if verifyFunc et al. make assumptions that this state is persisted across
+  -- multiple iterations. Ideally we should get make all non-framework state (specifically VerifyState) as small as possible,
+  -- but these refactorings are a larger undertaking.
   let fdecl     = currentFunc env
       initialst = (emptyVerifyState opts)
         { vstConsInfos = M.toList consinfos
@@ -146,10 +149,6 @@ updateFuncInfo gs opts env = do
 
   st <- execVerifyM (verifyFunc fdecl) initialst (VerifyEnv env)
 
-  -- TODO: Do we need to do it this way?
-  -- let newfailures = filter (\(qf,ct) -> maybe True (\fct -> ct /= fct)
-  --                                         (funcInfoFromEnv env qf >>= viCallType))
-  --                          (vstNewFailed st)
   let newfailures = vstNewFailed st
       newfunconds = vstNewFunConds st
 
