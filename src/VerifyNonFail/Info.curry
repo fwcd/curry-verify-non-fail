@@ -56,8 +56,8 @@ combineVerifyInfo v1 v2 = VerifyInfo
 --- Pretty-prints the given non-failure info in human-readable format.
 ppVerifyInfo :: TermDomain a => VerifyInfo a -> Doc
 ppVerifyInfo vi = align . csep . mapMaybe (\(label, v) -> (text label <+>) . text <$> v) $
-  [ ("nfc:", show <$> viNonFailCond vi)
-  , ("ct:",  prettyFunCallAType <$> viCallType vi)
-  , ("i/o:", showIOT <$> viIOType vi)
+  [ ("non-failure condition:", show <$> viNonFailCond vi)
+  , ("call type:",  prettyFunCallAType <$> viCallType vi)
+  , ("i/o type:", showIOT <$> viIOType vi)
   ]
   where csep = foldr1 (\x y -> x <> comma <+> y)
