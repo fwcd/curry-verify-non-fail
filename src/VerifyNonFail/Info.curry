@@ -24,6 +24,10 @@ data VerifyInfo a = VerifyInfo
 instance Functor VerifyInfo where
   fmap = mapVerifyInfoDomain
 
+instance Monoid (VerifyInfo a) where
+  mempty = emptyVerifyInfo
+  mappend = combineVerifyInfo
+
 --- Creates an empty VerifyInfo.
 emptyVerifyInfo :: VerifyInfo a
 emptyVerifyInfo = VerifyInfo
@@ -38,6 +42,14 @@ mapVerifyInfoDomain f vi = VerifyInfo
   { viNonFailCond = viNonFailCond vi
   , viCallType    = mapATypeDomain f <$> viCallType vi
   , viIOType      = mapIOTDomain f <$> viIOType vi
+  }
+
+--- Combines two VerifyInfos.
+combineVerifyInfo :: VerifyInfo a -> VerifyInfo a -> VerifyInfo a
+combineVerifyInfo v1 v2 = VerifyInfo
+  { viNonFailCond = viNonFailCond v1 <|> viNonFailCond v2
+  , viCallType    = viCallType    v1 <|> viCallType    v2
+  , viIOType      = viIOType      v1 <|> viIOType      v2
   }
 
 --- Pretty-prints the given non-failure info in human-readable format.
