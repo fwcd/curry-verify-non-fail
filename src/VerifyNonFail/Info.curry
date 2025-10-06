@@ -5,6 +5,7 @@ module VerifyNonFail.Info
 import Prelude hiding ( empty )
 
 import Analysis.TermDomain          ( TermDomain(..) )
+import Data.Maybe                   ( mapMaybe )
 import Text.Pretty                  ( Doc, (<+>), (<>), text, vcat, align, hsep, fill, empty, comma )
 import VerifyNonFail.CallTypes      ( ACallType, mapATypeDomain, prettyCT, prettyFunCallAType )
 import VerifyNonFail.Conditions     ( NonFailCond )
@@ -54,8 +55,9 @@ combineVerifyInfo v1 v2 = VerifyInfo
 
 --- Pretty-prints the given non-failure info in human-readable format.
 ppVerifyInfo :: TermDomain a => VerifyInfo a -> Doc
-ppVerifyInfo vi = align $ foldr1 (\x y -> x <> comma <+> y)
-  [ text "nfc:" <+> text (maybe "none" show (viNonFailCond vi))
-  , text "ct:"  <+> text (maybe "none" prettyFunCallAType (viCallType vi))
-  , text "i/o:" <+> text (maybe "none" showIOT (viIOType vi))
+ppVerifyInfo vi = align . csep . mapMaybe (\(label, v) -> (text label <+>) . text <$> v) $
+  [ ("nfc:", show <$> viNonFailCond vi)
+  , ("ct:",  prettyFunCallAType <$> viCallType vi)
+  , ("i/o:", showIOT <$> viIOType vi)
   ]
+  where csep = foldr1 (\x y -> x <> comma <+> y)
