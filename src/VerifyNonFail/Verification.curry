@@ -129,8 +129,6 @@ initFuncInfo opts gs env = do
   -- infer initial in/out type:
   (_, iotype) <- inferIOType opts (vgsValueAnalyis gs) (vgsAnalysisStore gs) prog fdecl
 
-  -- TODO
-
   return . Just $ emptyVerifyInfo
     { viCallType = Just acalltype
     , viIOType   = Just iotype
