@@ -134,8 +134,10 @@ initFuncInfo opts gs env = do
 
 updateFuncInfo :: TermDomain a => VerifyGlobals a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
 updateFuncInfo gs opts env = do
-  let state = 
-  execVerifyM
+  -- TODO: In the legacy implementation the state would be initialized only once for the whole program, not per iteration.
+  let state = emptyVerifyState opts
+      fdecl = currentFunc env
+  state' <- execVerifyM (verifyFunc fdecl) state (VerifyEnv env)
   return emptyVFuncUpdate
 
 --- Global internal state that is held across the whole verification
