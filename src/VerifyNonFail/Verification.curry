@@ -96,7 +96,7 @@ nonFailureVerifierWith valueanalysis opts = do
     , vAnalyze    =
         if optSkipUpdate opts
           then const . return $ emptyVFuncUpdate
-          else analyzeFuncInfo gs opts
+          else analyzeFunc gs opts
     }
 
 preprocessProg :: TermDomain a => VerifyGlobals a -> VUProgEnv (VerifyInfo a) -> VM VUProgUpdate
@@ -134,8 +134,8 @@ initFuncInfo opts gs env = do
     , viIOType   = Just iotype
     }
 
-analyzeFuncInfo :: TermDomain a => VerifyGlobals a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
-analyzeFuncInfo gs opts env = do
+analyzeFunc :: TermDomain a => VerifyGlobals a -> Options -> VUFuncEnv (VerifyInfo a) -> VM (VUFuncUpdate (VerifyInfo a))
+analyzeFunc gs opts env = do
   consinfos <- liftIO . readIORef $ vgsConsInfos gs
 
   -- In the legacy implementation the state would be initialized only once for the whole program, not per iteration,
